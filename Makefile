@@ -7,9 +7,14 @@
 
 .DEFAULT_GOAL := help
 
+PACKAGE=github.com/manusa/kubernetes-mcp-server
+GIT_COMMIT_HASH=$(shell git rev-parse HEAD)
+GIT_VERSION=$(shell git describe --tags --always --dirty)
+BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
 BINARY_NAME=kubernetes-mcp-server
 LD_FLAGS=-s -w \
-	-X '$(PACKAGE)/pkg/version.CommitHash=$(COMMIT_HASH)' \
+	-X '$(PACKAGE)/pkg/version.CommitHash=$(GIT_COMMIT_HASH)' \
+	-X '$(PACKAGE)/pkg/version.Version=$(GIT_VERSION)' \
 	-X '$(PACKAGE)/pkg/version.BuildTime=$(BUILD_TIME)' \
 	-X '$(PACKAGE)/pkg/version.BinaryName=$(BINARY_NAME)'
 COMMON_BUILD_ARGS=-ldflags "$(LD_FLAGS)"
