@@ -5,7 +5,11 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 )
 
-func Start() {
+type Sever struct {
+	server *server.MCPServer
+}
+
+func NewSever() *Sever {
 	s := server.NewMCPServer(
 		version.BinaryName,
 		version.Version,
@@ -13,7 +17,9 @@ func Start() {
 		server.WithPromptCapabilities(true),
 		server.WithLogging(),
 	)
-	if err := server.ServeStdio(s); err != nil {
-		panic(err)
-	}
+	return &Sever{s}
+}
+
+func (s *Sever) ServeStdio() error {
+	return server.ServeStdio(s.server)
 }

@@ -17,13 +17,18 @@ Kubernetes Model Context Protocol (MCP) server
   # show this help
   kubernetes-mcp-server -h
 
+  # shows version information
+  kubernetes-mcp-server --version
+
   # TODO: add more examples`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.GetBool("version") {
 			fmt.Println(version.Version)
 			return
 		}
-		mcp.Start()
+		if err := mcp.NewSever().ServeStdio(); err != nil {
+			panic(err)
+		}
 	},
 }
 

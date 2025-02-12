@@ -7,7 +7,7 @@
 
 .DEFAULT_GOAL := help
 
-PACKAGE=github.com/manusa/kubernetes-mcp-server
+PACKAGE=$(shell go list -m)
 GIT_COMMIT_HASH=$(shell git rev-parse HEAD)
 GIT_VERSION=$(shell git describe --tags --always --dirty)
 BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -41,6 +41,10 @@ build: ## Build the project
 	go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME) ./cmd/kubernetes-mcp-server
 
 CLEAN_TARGETS+='$(BINARY_NAME)'
+
+.PHONY: test
+test: ## Run the tests
+	go test -v ./...
 
 .PHONY: tidy
 tidy: ## Tidy up the go modules
