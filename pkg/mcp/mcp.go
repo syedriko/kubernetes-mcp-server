@@ -11,20 +11,42 @@ type Sever struct {
 }
 
 func NewSever() *Sever {
-	s := server.NewMCPServer(
-		version.BinaryName,
-		version.Version,
-		server.WithResourceCapabilities(true, true),
-		server.WithPromptCapabilities(true),
-		server.WithLogging(),
-	)
-	s.AddTool(mcp.NewTool(
-		"configuration_view",
-		mcp.WithDescription("Get the current Kubernetes configuration content as a kubeconfig YAML"),
-	), configurationView)
-	return &Sever{s}
+	s := &Sever{
+		server: server.NewMCPServer(
+			version.BinaryName,
+			version.Version,
+			server.WithResourceCapabilities(true, true),
+			server.WithPromptCapabilities(true),
+			server.WithLogging(),
+		),
+	}
+	s.initConfiguration()
+	s.initPods()
+	return s
 }
 
 func (s *Sever) ServeStdio() error {
 	return server.ServeStdio(s.server)
+}
+
+func NewTextResult(content string, err error) *mcp.CallToolResult {
+	if err != nil {
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []interface{}{
+				mcp.TextContent{
+					Type: "text",
+					Text: err.Error(),
+				},
+			},
+		}
+	}
+	return &mcp.CallToolResult{
+		Content: []interface{}{
+			mcp.TextContent{
+				Type: "text",
+				Text: content,
+			},
+		},
+	}
 }

@@ -7,19 +7,6 @@ import (
 )
 
 func TestConfigurationView(t *testing.T) {
-	envTest := setupEnvTest()
-	defer envTest.Stop()
-	envTestConfig, err := envTest.Start()
-	withKubeConfig(t, envTestConfig)
-	if err != nil {
-		t.Errorf("Error starting test environment: %s", err)
-		return
-	}
-	defer func() {
-		if stopErr := envTest.Stop(); stopErr != nil {
-			panic(stopErr)
-		}
-	}()
 	t.Run("configuration_view returns configuration", testCase(func(t *testing.T, c *mcpContext) {
 		configurationGet := mcp.CallToolRequest{}
 		configurationGet.Params.Name = "configuration_view"

@@ -2,21 +2,22 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+func (s *Sever) initConfiguration() {
+	s.server.AddTool(mcp.NewTool(
+		"configuration_view",
+		mcp.WithDescription("Get the current Kubernetes configuration content as a kubeconfig YAML"),
+	), configurationView)
+}
+
 func configurationView(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	cfg, err := kubernetes.ConfigurationView()
+	ret, err := kubernetes.ConfigurationView()
 	if err != nil {
-		return nil, err
+		err = fmt.Errorf("failed to get configuration view: %v", err)
 	}
-	return &mcp.CallToolResult{
-		Content: []interface{}{
-			mcp.TextContent{
-				Type: "text",
-				Text: cfg,
-			},
-		},
-	}, nil
+	return NewTextResult(ret, err), nil
 }

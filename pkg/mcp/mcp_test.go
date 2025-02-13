@@ -6,11 +6,18 @@ import (
 )
 
 func TestTools(t *testing.T) {
+	expectedNames := []string{"pods_list", "pods_list_in_namespace", "configuration_view"}
 	t.Run("Has configuration_view tool", testCase(func(t *testing.T, c *mcpContext) {
 		tools, err := c.mcpClient.ListTools(c.ctx, mcp.ListToolsRequest{})
-		if tools.Tools[0].Name != "configuration_view" {
-			t.Fatalf("tool name mismatch %v", err)
-			return
+		nameSet := make(map[string]bool)
+		for _, tool := range tools.Tools {
+			nameSet[tool.Name] = true
+		}
+		for _, name := range expectedNames {
+			if nameSet[name] != true {
+				t.Fatalf("tool name mismatch %v", err)
+				return
+			}
 		}
 	}))
 }
