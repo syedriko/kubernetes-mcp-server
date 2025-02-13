@@ -37,14 +37,18 @@ clean: ## Clean up all build artifacts
 	rm -rf $(CLEAN_TARGETS)
 
 .PHONY: build
-build: ## Build the project
+build: clean tidy format ## Build the project
 	go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME) ./cmd/kubernetes-mcp-server
 
 CLEAN_TARGETS+='$(BINARY_NAME)'
 
 .PHONY: test
 test: ## Run the tests
-	go test -v ./...
+	go test -count=1 -v ./...
+
+.PHONY: format
+format: ## Format the code
+	go fmt ./...
 
 .PHONY: tidy
 tidy: ## Tidy up the go modules

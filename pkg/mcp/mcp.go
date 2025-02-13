@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -17,6 +18,10 @@ func NewSever() *Sever {
 		server.WithPromptCapabilities(true),
 		server.WithLogging(),
 	)
+	s.AddTool(mcp.NewTool(
+		"configuration_view",
+		mcp.WithDescription("Get the current Kubernetes configuration content as a kubeconfig YAML"),
+	), configurationView)
 	return &Sever{s}
 }
 
