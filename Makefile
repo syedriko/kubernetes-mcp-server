@@ -71,12 +71,12 @@ npm-publish: npm ## Publish the npm packages
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		DIRNAME="$(BINARY_NAME)-$(os)-$(arch)"; \
 		cd npm/$$DIRNAME; \
-		echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> .npmrc; \
+		echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> .npmrc; \
 		jq '.version = "$(NPM_VERSION)"' package.json > tmp.json && mv tmp.json package.json; \
 		npm publish; \
 		cd ../..; \
 	))
-	echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> ./npm/.npmrc
+	echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> ./npm/.npmrc
 	jq '.version = "$(NPM_VERSION)"' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
 	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
 	cd npm && npm publish
