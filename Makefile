@@ -19,8 +19,8 @@ LD_FLAGS = -s -w \
 	-X '$(PACKAGE)/pkg/version.BinaryName=$(BINARY_NAME)'
 COMMON_BUILD_ARGS = -ldflags "$(LD_FLAGS)"
 
-OSES = linux darwin windows
-ARCHS = amd64 arm64 arm
+OSES = darwin linux windows
+ARCHS = amd64 arm64
 
 CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
@@ -50,7 +50,7 @@ build: clean tidy format ## Build the project
 .PHONY: build-all-platforms
 build-all-platforms: clean tidy format ## Build the project for all platforms
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
-		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch) ./cmd/kubernetes-mcp-server; \
+		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd/kubernetes-mcp-server; \
 	))
 
 .PHONY: test
