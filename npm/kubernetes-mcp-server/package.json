@@ -11,8 +11,8 @@
     "kubernetes-mcp-server-darwin-arm64": "0.0.0",
     "kubernetes-mcp-server-linux-amd64": "0.0.0",
     "kubernetes-mcp-server-linux-arm64": "0.0.0",
-    "kubernetes-mcp-server-win32-amd64": "0.0.0",
-    "kubernetes-mcp-server-win32-arm64": "0.0.0"
+    "kubernetes-mcp-server-windows-amd64": "0.0.0",
+    "kubernetes-mcp-server-windows-arm64": "0.0.0"
   },
   "repository": {
     "type": "git",
