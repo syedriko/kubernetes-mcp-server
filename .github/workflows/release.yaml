@@ -18,8 +18,8 @@ permissions:
   discussions: write
 
 jobs:
-  build:
-    name: Build
+  release:
+    name: Release
     runs-on: macos-latest
     steps:
       - name: Checkout
