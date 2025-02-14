@@ -19,12 +19,16 @@ LD_FLAGS = -s -w \
 	-X '$(PACKAGE)/pkg/version.BinaryName=$(BINARY_NAME)'
 COMMON_BUILD_ARGS = -ldflags "$(LD_FLAGS)"
 
+NPM_VERSION ?= $(shell echo $(GIT_VERSION) | sed 's/^v//')
 OSES = darwin linux windows
 ARCHS = amd64 arm64
 
 CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
-CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)))
+CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
+CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/bin/))
+CLEAN_TARGETS += ./npm/.npmrc
+CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/.npmrc))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
 # The awk commands is responsible to read the entire set of makefiles included in this invocation, looking for lines of the file as xyz: ## something, and then pretty-format the target and help. Then, if there's a line with ##@ something, that gets pretty-printed as a category.
@@ -52,6 +56,30 @@ build-all-platforms: clean tidy format ## Build the project for all platforms
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd/kubernetes-mcp-server; \
 	))
+
+.PHONY: npm
+npm: build-all-platforms ## Create the npm packages
+	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
+		EXECUTABLE=./$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,); \
+		DIRNAME=$(BINARY_NAME)-$(os)-$(arch); \
+		mkdir -p ./npm/$$DIRNAME/bin; \
+		cp $$EXECUTABLE ./npm/$$DIRNAME/bin/; \
+	))
+
+.PHONY: npm-publish
+npm-publish: npm ## Publish the npm packages
+	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
+		DIRNAME="$(BINARY_NAME)-$(os)-$(arch)"; \
+		cd npm/$$DIRNAME; \
+		echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> .npmrc; \
+		jq '.version = "$(NPM_VERSION)"' package.json > tmp.json && mv tmp.json package.json; \
+		echo npm publish; \
+		cd ../..; \
+	))
+	echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> ./npm/.npmrc
+	jq '.version = "$(NPM_VERSION)"' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
+	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
+	cd npm && echo npm publish
 
 .PHONY: test
 test: ## Run the tests

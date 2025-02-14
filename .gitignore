@@ -1,9 +1,14 @@
 .idea/
 
-/kubernetes-mcp-server
-/kubernetes-mcp-server-darwin-amd64
-/kubernetes-mcp-server-darwin-arm64
-/kubernetes-mcp-server-linux-amd64
-/kubernetes-mcp-server-linux-arm64
-/kubernetes-mcp-server-windows-amd64.exe
-/kubernetes-mcp-server-windows-arm64.exe
+.npmrc
+kubernetes-mcp-server
+kubernetes-mcp-server-darwin-amd64
+!npm/kubernetes-mcp-server-darwin-amd64/
+kubernetes-mcp-server-darwin-arm64
+!npm/kubernetes-mcp-server-darwin-arm64
+kubernetes-mcp-server-linux-amd64
+!npm/kubernetes-mcp-server-linux-amd64
+kubernetes-mcp-server-linux-arm64
+!npm/kubernetes-mcp-server-linux-arm64
+kubernetes-mcp-server-windows-amd64.exe
+kubernetes-mcp-server-windows-arm64.exe

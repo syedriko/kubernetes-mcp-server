@@ -1,0 +1,38 @@
+{
+  "name": "kubernetes-mcp-server",
+  "version": "0.0.0",
+  "description": "Model Context Protocol (MCP) server for Kubernetes and OpenShift",
+  "main": "bin/kubernetes-mcp-server.js",
+  "bin": {
+    "kubernetes-mcp-server": "bin/kubernetes-mcp-server.js"
+  },
+  "optionalDependencies": {
+    "kubernetes-mcp-server-darwin-amd64": "0.0.0",
+    "kubernetes-mcp-server-darwin-arm64": "0.0.0",
+    "kubernetes-mcp-server-linux-amd64": "0.0.0",
+    "kubernetes-mcp-server-linux-arm64": "0.0.0",
+    "kubernetes-mcp-server-win32-amd64": "0.0.0",
+    "kubernetes-mcp-server-win32-arm64": "0.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/manusa/kubernetes-mcp-server.git"
+  },
+  "keywords": [
+    "mcp",
+    "kubernetes",
+    "openshift",
+    "model",
+    "context",
+    "protocol"
+  ],
+  "author": {
+    "name": "Marc Nuri",
+    "url": "https://www.marcnuri.com"
+  },
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/manusa/kubernetes-mcp-server/issues"
+  },
+  "homepage": "https://github.com/manusa/kubernetes-mcp-server#readme"
+}
