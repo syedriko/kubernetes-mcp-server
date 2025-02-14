@@ -73,13 +73,13 @@ npm-publish: npm ## Publish the npm packages
 		cd npm/$$DIRNAME; \
 		echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> .npmrc; \
 		jq '.version = "$(NPM_VERSION)"' package.json > tmp.json && mv tmp.json package.json; \
-		echo npm publish; \
+		npm publish; \
 		cd ../..; \
 	))
 	echo '//registry.npmjs.org/:_authToken=\$(NPM_TOKEN)' >> ./npm/.npmrc
 	jq '.version = "$(NPM_VERSION)"' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
 	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
-	cd npm && echo npm publish
+	cd npm && npm publish
 
 .PHONY: test
 test: ## Run the tests
