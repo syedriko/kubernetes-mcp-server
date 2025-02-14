@@ -21,7 +21,7 @@ func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersion
 	if err != nil {
 		return "", err
 	}
-	rl, err := client.Resource(*gvr).Namespace("").List(ctx, metav1.ListOptions{})
+	rl, err := client.Resource(*gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return "", err
 	}
