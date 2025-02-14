@@ -2,6 +2,7 @@
 
 .npmrc
 kubernetes-mcp-server
+kubernetes-mcp-server/README.md
 kubernetes-mcp-server-darwin-amd64
 !npm/kubernetes-mcp-server-darwin-amd64/
 kubernetes-mcp-server-darwin-arm64

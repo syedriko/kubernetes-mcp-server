@@ -27,7 +27,7 @@ CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/bin/))
-CLEAN_TARGETS += ./npm/.npmrc
+CLEAN_TARGETS += ./npm/.npmrc ./npm/bin ./npm/README.md
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/.npmrc))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
@@ -76,6 +76,9 @@ npm-publish: npm ## Publish the npm packages
 		npm publish; \
 		cd ../..; \
 	))
+	cp README.md ./npm/README.md
+	mkdir -p ./npm/bin
+	cp ./npm/index.js ./npm/bin/cli
 	echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> ./npm/.npmrc
 	jq '.version = "$(NPM_VERSION)"' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
 	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
