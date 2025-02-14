@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"github.com/manusa/kubernetes-mcp-server/pkg/mcp"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/net/context"
 )
 
 var rootCmd = &cobra.Command{
@@ -26,7 +28,7 @@ Kubernetes Model Context Protocol (MCP) server
 			fmt.Println(version.Version)
 			return
 		}
-		if err := mcp.NewSever().ServeStdio(); err != nil {
+		if err := mcp.NewSever().ServeStdio(); err != nil && !errors.Is(err, context.Canceled) {
 			panic(err)
 		}
 	},
