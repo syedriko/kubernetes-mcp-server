@@ -2,9 +2,9 @@
   "name": "kubernetes-mcp-server",
   "version": "0.0.0",
   "description": "Model Context Protocol (MCP) server for Kubernetes and OpenShift",
-  "main": "./index.js",
+  "main": "./bin/index.js",
   "bin": {
-    "kubernetes-mcp-server": "bin/cli"
+    "kubernetes-mcp-server": "bin/index.js"
   },
   "optionalDependencies": {
     "kubernetes-mcp-server-darwin-amd64": "0.0.0",

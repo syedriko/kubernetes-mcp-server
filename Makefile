@@ -27,7 +27,7 @@ CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/bin/))
-CLEAN_TARGETS += ./npm/.npmrc ./npm/bin ./npm/README.md
+CLEAN_TARGETS += ./npm/kubernetes-mcp-server/.npmrc ./npm/kubernetes-mcp-server/README.md
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/.npmrc))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
@@ -58,7 +58,7 @@ build-all-platforms: clean tidy format ## Build the project for all platforms
 	))
 
 .PHONY: npm
-npm: build-all-platforms ## Create the npm packages
+npm: build-all-platforms ## Create the npm packages for each platform
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		EXECUTABLE=./$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,); \
 		DIRNAME=$(BINARY_NAME)-$(os)-$(arch); \
@@ -76,13 +76,11 @@ npm-publish: npm ## Publish the npm packages
 		npm publish; \
 		cd ../..; \
 	))
-	cp README.md ./npm/README.md
-	mkdir -p ./npm/bin
-	cp ./npm/index.js ./npm/bin/cli
-	echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> ./npm/.npmrc
-	jq '.version = "$(NPM_VERSION)"' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
-	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/package.json > tmp.json && mv tmp.json ./npm/package.json; \
-	cd npm && npm publish
+	cp README.md ./npm/kubernetes-mcp-server/README.md
+	echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> ./npm/kubernetes-mcp-server/.npmrc
+	jq '.version = "$(NPM_VERSION)"' ./npm/kubernetes-mcp-server/package.json > tmp.json && mv tmp.json ./npm/kubernetes-mcp-server/package.json; \
+	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/kubernetes-mcp-server/package.json > tmp.json && mv tmp.json ./npm/kubernetes-mcp-server/package.json; \
+	cd npm/kubernetes-mcp-server && npm publish
 
 .PHONY: test
 test: ## Run the tests
