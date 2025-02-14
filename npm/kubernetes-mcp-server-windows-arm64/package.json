@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "description": "Model Context Protocol (MCP) server for Kubernetes and OpenShift",
   "os": [
-    "arm64"
+    "win32"
   ],
   "cpu": [
-    "x64"
+    "arm64"
   ]
 }
