@@ -7,18 +7,24 @@
 
 .DEFAULT_GOAL := help
 
-PACKAGE=$(shell go list -m)
-GIT_COMMIT_HASH=$(shell git rev-parse HEAD)
-GIT_VERSION=$(shell git describe --tags --always --dirty)
-BUILD_TIME=$(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
-BINARY_NAME=kubernetes-mcp-server
-LD_FLAGS=-s -w \
+PACKAGE = $(shell go list -m)
+GIT_COMMIT_HASH = $(shell git rev-parse HEAD)
+GIT_VERSION = $(shell git describe --tags --always --dirty)
+BUILD_TIME = $(shell date -u '+%Y-%m-%dT%H:%M:%SZ')
+BINARY_NAME = kubernetes-mcp-server
+LD_FLAGS = -s -w \
 	-X '$(PACKAGE)/pkg/version.CommitHash=$(GIT_COMMIT_HASH)' \
 	-X '$(PACKAGE)/pkg/version.Version=$(GIT_VERSION)' \
 	-X '$(PACKAGE)/pkg/version.BuildTime=$(BUILD_TIME)' \
 	-X '$(PACKAGE)/pkg/version.BinaryName=$(BINARY_NAME)'
-COMMON_BUILD_ARGS=-ldflags "$(LD_FLAGS)"
-CLEAN_TARGETS:=
+COMMON_BUILD_ARGS = -ldflags "$(LD_FLAGS)"
+
+OSES = linux darwin windows
+ARCHS = amd64 arm64 arm
+
+CLEAN_TARGETS :=
+CLEAN_TARGETS += '$(BINARY_NAME)'
+CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
 # The awk commands is responsible to read the entire set of makefiles included in this invocation, looking for lines of the file as xyz: ## something, and then pretty-format the target and help. Then, if there's a line with ##@ something, that gets pretty-printed as a category.
@@ -40,7 +46,12 @@ clean: ## Clean up all build artifacts
 build: clean tidy format ## Build the project
 	go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME) ./cmd/kubernetes-mcp-server
 
-CLEAN_TARGETS+='$(BINARY_NAME)'
+
+.PHONY: build-all-platforms
+build-all-platforms: clean tidy format ## Build the project for all platforms
+	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
+		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch) ./cmd/kubernetes-mcp-server; \
+	))
 
 .PHONY: test
 test: ## Run the tests

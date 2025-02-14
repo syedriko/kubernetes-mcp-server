@@ -2,11 +2,9 @@
 
 <p align="center">
   <a href="https://github.com/manusa/kubernetes-mcp-server/blob/main/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/manusa/kubernetes-mcp-server">
-  </a>
+    <img alt="GitHub License" src="https://img.shields.io/github/license/manusa/kubernetes-mcp-server" /></a>
   <a href="https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml">
-    <img src="https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg" alt="Build status badge" />
-  </a>
+    <img src="https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg" alt="Build status badge" /></a>
 </p>
 
 
