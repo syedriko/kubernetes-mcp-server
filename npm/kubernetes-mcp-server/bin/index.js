@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const path = require('path')
 const childProcess = require('child_process');
 
 const BINARY_MAP = {
@@ -12,14 +11,13 @@ const BINARY_MAP = {
   win32_arm64: {name: 'kubernetes-mcp-server-windows-arm64', suffix: '.exe'},
 };
 
-const binary = BINARY_MAP[`${process.platform}_${process.arch}`];
-
+// Resolving will fail if the optionalDependency was not installed or the platform/arch is not supported
 const resolveBinaryPath = () => {
   try {
-    // Resolving will fail if the optionalDependency was not installed
-    return require.resolve(`${binary.name}/bin/${binary.name}${binary.suffix}`)
+    const binary = BINARY_MAP[`${process.platform}_${process.arch}`];
+    return require.resolve(`${binary.name}/bin/${binary.name}${binary.suffix}`);
   } catch (e) {
-    return path.join(__dirname, '..', `${binary.name}${binary.suffix}`)
+    throw new Error(`Could not resolve binary path for platform/arch: ${process.platform}/${process.arch}`);
   }
 };
 

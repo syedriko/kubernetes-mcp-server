@@ -27,7 +27,7 @@ CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/bin/))
-CLEAN_TARGETS += ./npm/kubernetes-mcp-server/.npmrc ./npm/kubernetes-mcp-server/README.md
+CLEAN_TARGETS += ./npm/kubernetes-mcp-server/.npmrc ./npm/kubernetes-mcp-server/LICENSE ./npm/kubernetes-mcp-server/README.md
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(BINARY_NAME)-$(os)-$(arch)/.npmrc))
 
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
@@ -76,7 +76,7 @@ npm-publish: npm ## Publish the npm packages
 		npm publish; \
 		cd ../..; \
 	))
-	cp README.md ./npm/kubernetes-mcp-server/README.md
+	cp README.md LICENSE ./npm/kubernetes-mcp-server/
 	echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' >> ./npm/kubernetes-mcp-server/.npmrc
 	jq '.version = "$(NPM_VERSION)"' ./npm/kubernetes-mcp-server/package.json > tmp.json && mv tmp.json ./npm/kubernetes-mcp-server/package.json; \
 	jq '.optionalDependencies |= with_entries(.value = "$(NPM_VERSION)")' ./npm/kubernetes-mcp-server/package.json > tmp.json && mv tmp.json ./npm/kubernetes-mcp-server/package.json; \
