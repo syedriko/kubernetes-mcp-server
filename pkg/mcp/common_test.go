@@ -65,13 +65,11 @@ func (c *mcpContext) afterEach() {
 	c.testServer.Close()
 }
 
-func testCase(test func(t *testing.T, c *mcpContext)) func(*testing.T) {
-	return func(t *testing.T) {
-		mcpCtx := &mcpContext{}
-		mcpCtx.beforeEach(t)
-		defer mcpCtx.afterEach()
-		test(t, mcpCtx)
-	}
+func testCase(t *testing.T, test func(c *mcpContext)) {
+	mcpCtx := &mcpContext{}
+	mcpCtx.beforeEach(t)
+	defer mcpCtx.afterEach()
+	test(mcpCtx)
 }
 
 func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
