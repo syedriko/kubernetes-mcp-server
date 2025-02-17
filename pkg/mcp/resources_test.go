@@ -85,6 +85,92 @@ func TestResourcesList(t *testing.T) {
 	})
 }
 
+func TestResourcesGet(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		t.Run("resources_get with missing apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_get", map[string]interface{}{})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_get with missing kind returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_get", map[string]interface{}{"apiVersion": "v1"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_get with invalid apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_get", map[string]interface{}{"apiVersion": "invalid/api/version", "kind": "Pod", "name": "a-pod"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_get with nonexistent apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_get", map[string]interface{}{"apiVersion": "custom.non.existent.example.com/v1", "kind": "Custom", "name": "a-custom"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to get resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_get with missing name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_get", map[string]interface{}{"apiVersion": "v1", "kind": "Namespace"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		namespace, err := c.callTool("resources_get", map[string]interface{}{"apiVersion": "v1", "kind": "Namespace", "name": "default"})
+		t.Run("resources_get returns namespace", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if namespace.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+		var decodedNamespace unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(namespace.Content[0].(map[string]interface{})["text"].(string)), &decodedNamespace)
+		t.Run("resources_get has yaml content", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("invalid tool result content %v", err)
+				return
+			}
+		})
+		t.Run("resources_get returns default namespace", func(t *testing.T) {
+			if decodedNamespace.GetName() != "default" {
+				t.Fatalf("invalid namespace name, expected default, got %v", decodedNamespace.GetName())
+				return
+			}
+		})
+	})
+}
+
 func TestResourcesCreateOrUpdate(t *testing.T) {
 	testCase(t, func(c *mcpContext) {
 		c.withEnvTest()
