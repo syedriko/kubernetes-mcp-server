@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"github.com/mark3labs/mcp-go/mcp"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/yaml"
 	"testing"
@@ -9,10 +8,7 @@ import (
 
 func TestConfigurationView(t *testing.T) {
 	testCase(t, func(c *mcpContext) {
-		configurationGet := mcp.CallToolRequest{}
-		configurationGet.Params.Name = "configuration_view"
-		configurationGet.Params.Arguments = map[string]interface{}{}
-		toolResult, err := c.mcpClient.CallTool(c.ctx, configurationGet)
+		toolResult, err := c.callTool("configuration_view", map[string]interface{}{})
 		t.Run("configuration_view returns configuration", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("call tool failed %v", err)

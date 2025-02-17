@@ -23,13 +23,55 @@ import (
 	"testing"
 )
 
+// envTest has an expensive setup, so we only want to do it once per entire test run.
+var envTest *envtest.Environment
+var envTestRestConfig *rest.Config
+
+func TestMain(m *testing.M) {
+	// Set up
+	envTestDir, err := store.DefaultStoreDir()
+	if err != nil {
+		panic(err)
+	}
+	envTestEnv := &env.Env{
+		FS:  afero.Afero{Fs: afero.NewOsFs()},
+		Out: os.Stdout,
+		Client: &remote.HTTPClient{
+			IndexURL: remote.DefaultIndexURL,
+		},
+		Platform: versions.PlatformItem{
+			Platform: versions.Platform{
+				OS:   runtime.GOOS,
+				Arch: runtime.GOARCH,
+			},
+		},
+		Version: versions.AnyVersion,
+		Store:   store.NewAt(envTestDir),
+	}
+	envTestEnv.CheckCoherence()
+	workflows.Use{}.Do(envTestEnv)
+	versionDir := envTestEnv.Platform.Platform.BaseName(*envTestEnv.Version.AsConcrete())
+	envTest = &envtest.Environment{
+		BinaryAssetsDirectory: filepath.Join(envTestDir, "k8s", versionDir),
+	}
+	envTestRestConfig, _ = envTest.Start()
+
+	// Test!
+	code := m.Run()
+
+	// Tear down
+	if envTest != nil {
+		_ = envTest.Stop()
+	}
+	os.Exit(code)
+}
+
 type mcpContext struct {
 	ctx        context.Context
 	tempDir    string
 	testServer *httptest.Server
 	cancel     context.CancelFunc
 	mcpClient  *client.SSEMCPClient
-	envTest    *envtest.Environment
 }
 
 func (c *mcpContext) beforeEach(t *testing.T) {
@@ -57,9 +99,6 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 }
 
 func (c *mcpContext) afterEach() {
-	if c.envTest != nil {
-		_ = c.envTest.Stop()
-	}
 	c.cancel()
 	_ = c.mcpClient.Close()
 	c.testServer.Close()
@@ -94,36 +133,7 @@ func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 }
 
 func (c *mcpContext) withEnvTest() {
-	if c.envTest != nil {
-		return
-	}
-	envTestDir, err := store.DefaultStoreDir()
-	if err != nil {
-		panic(err)
-	}
-	envTest := &env.Env{
-		FS:  afero.Afero{Fs: afero.NewOsFs()},
-		Out: os.Stdout,
-		Client: &remote.HTTPClient{
-			IndexURL: remote.DefaultIndexURL,
-		},
-		Platform: versions.PlatformItem{
-			Platform: versions.Platform{
-				OS:   runtime.GOOS,
-				Arch: runtime.GOARCH,
-			},
-		},
-		Version: versions.AnyVersion,
-		Store:   store.NewAt(envTestDir),
-	}
-	envTest.CheckCoherence()
-	workflows.Use{}.Do(envTest)
-	versionDir := envTest.Platform.Platform.BaseName(*envTest.Version.AsConcrete())
-	c.envTest = &envtest.Environment{
-		BinaryAssetsDirectory: filepath.Join(envTestDir, "k8s", versionDir),
-	}
-	restConfig, _ := c.envTest.Start()
-	c.withKubeConfig(restConfig)
+	c.withKubeConfig(envTestRestConfig)
 }
 
 func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
@@ -135,4 +145,11 @@ func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 		panic(err)
 	}
 	return kubernetesClient
+}
+
+func (c *mcpContext) callTool(name string, args map[string]interface{}) (*mcp.CallToolResult, error) {
+	callToolRequest := mcp.CallToolRequest{}
+	callToolRequest.Params.Name = name
+	callToolRequest.Params.Arguments = args
+	return c.mcpClient.CallTool(c.ctx, callToolRequest)
 }

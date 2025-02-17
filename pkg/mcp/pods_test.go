@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"github.com/mark3labs/mcp-go/mcp"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -13,11 +12,9 @@ import (
 
 func TestPodsListInAllNamespaces(t *testing.T) {
 	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
 		createTestData(c.ctx, c.newKubernetesClient())
-		configurationGet := mcp.CallToolRequest{}
-		configurationGet.Params.Name = "pods_list"
-		configurationGet.Params.Arguments = map[string]interface{}{}
-		toolResult, err := c.mcpClient.CallTool(c.ctx, configurationGet)
+		toolResult, err := c.callTool("pods_list", map[string]interface{}{})
 		t.Run("pods_list returns pods list", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("call tool failed %v", err)
@@ -65,6 +62,68 @@ func TestPodsListInAllNamespaces(t *testing.T) {
 			}
 		})
 	})
+}
+
+func TestPodsListInNamespace(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		t.Run("pods_list_in_namespace with nil namespace returns pods list", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_list_in_namespace", map[string]interface{}{})
+			if toolResult.IsError != true {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list pods in namespace, missing argument namespace" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		createTestData(c.ctx, c.newKubernetesClient())
+		toolResult, err := c.callTool("pods_list_in_namespace", map[string]interface{}{
+			"namespace": "ns-1",
+		})
+		t.Run("pods_list_in_namespace returns pods list", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if toolResult.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+		var decoded []unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		t.Run("pods_list_in_namespace has yaml content", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("invalid tool result content %v", err)
+				return
+			}
+		})
+		t.Run("pods_list_in_namespace returns 1 items", func(t *testing.T) {
+			if len(decoded) != 1 {
+				t.Fatalf("invalid pods count, expected 1, got %v", len(decoded))
+				return
+			}
+		})
+		t.Run("pods_list_in_namespace returns pod in ns-1", func(t *testing.T) {
+			if decoded[0].GetName() != "a-pod-in-ns-1" {
+				t.Fatalf("invalid pod name, expected a-pod-in-ns-1, got %v", decoded[0].GetName())
+				return
+			}
+			if decoded[0].GetNamespace() != "ns-1" {
+				t.Fatalf("invalid pod namespace, expected ns-1, got %v", decoded[0].GetNamespace())
+				return
+			}
+		})
+		t.Run("pods_list_in_namespace omits managed fields", func(t *testing.T) {
+			if decoded[0].GetManagedFields() != nil {
+				t.Fatalf("managed fields should be omitted, got %v", decoded[0].GetManagedFields())
+				return
+			}
+		})
+	})
+
 }
 
 func createTestData(ctx context.Context, kc *kubernetes.Clientset) {
