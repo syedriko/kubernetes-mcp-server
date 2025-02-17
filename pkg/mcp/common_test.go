@@ -6,6 +6,8 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/afero"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -55,6 +57,8 @@ func TestMain(m *testing.M) {
 		BinaryAssetsDirectory: filepath.Join(envTestDir, "k8s", versionDir),
 	}
 	envTestRestConfig, _ = envTest.Start()
+	kc, _ := kubernetes.NewForConfig(envTestRestConfig)
+	createTestData(context.Background(), kc)
 
 	// Test!
 	code := m.Run()
@@ -111,6 +115,7 @@ func testCase(t *testing.T, test func(c *mcpContext)) {
 	test(mcpCtx)
 }
 
+// withKubeConfig sets up a fake kubeconfig in the temp directory based on the provided rest.Config
 func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 	fakeConfig := api.NewConfig()
 	fakeConfig.CurrentContext = "fake-context"
@@ -132,10 +137,12 @@ func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 	return fakeConfig
 }
 
+// withEnvTest sets up the environment for kubeconfig to be used with envTest
 func (c *mcpContext) withEnvTest() {
 	c.withKubeConfig(envTestRestConfig)
 }
 
+// newKubernetesClient creates a new Kubernetes client with the current kubeconfig
 func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 	c.withEnvTest()
 	pathOptions := clientcmd.NewDefaultPathOptions()
@@ -147,9 +154,44 @@ func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 	return kubernetesClient
 }
 
+// callTool helper function to call a tool by name with arguments
 func (c *mcpContext) callTool(name string, args map[string]interface{}) (*mcp.CallToolResult, error) {
 	callToolRequest := mcp.CallToolRequest{}
 	callToolRequest.Params.Name = name
 	callToolRequest.Params.Arguments = args
 	return c.mcpClient.CallTool(c.ctx, callToolRequest)
+}
+
+func createTestData(ctx context.Context, kc *kubernetes.Clientset) {
+	_, _ = kc.CoreV1().Namespaces().
+		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-1"}}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Namespaces().
+		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-2"}}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("default").
+		Create(ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-default"},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "nginx", Image: "nginx"},
+				},
+			},
+		}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("ns-1").
+		Create(ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-1"},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "nginx", Image: "nginx"},
+				},
+			},
+		}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("ns-2").
+		Create(ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-2"},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{Name: "nginx", Image: "nginx"},
+				},
+			},
+		}, metav1.CreateOptions{})
 }

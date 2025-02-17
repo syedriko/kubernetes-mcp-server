@@ -27,6 +27,22 @@ func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersion
 	return marshal(rl.Items)
 }
 
+func (k *Kubernetes) ResourcesGet(ctx context.Context, gvk *schema.GroupVersionKind, namespace, name string) (string, error) {
+	client, err := dynamic.NewForConfig(k.cfg)
+	if err != nil {
+		return "", err
+	}
+	gvr, err := k.resourceFor(gvk)
+	if err != nil {
+		return "", err
+	}
+	rg, err := client.Resource(*gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	return marshal(rg)
+}
+
 func (k *Kubernetes) resourceFor(gvk *schema.GroupVersionKind) (*schema.GroupVersionResource, error) {
 	if k.deferredDiscoveryRESTMapper == nil {
 		d, err := discovery.NewDiscoveryClientForConfig(k.cfg)

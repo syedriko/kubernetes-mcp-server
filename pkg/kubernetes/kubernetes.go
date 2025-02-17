@@ -5,6 +5,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
 )
 
@@ -37,11 +38,28 @@ func marshal(v any) (string, error) {
 	return string(ret), nil
 }
 
+func resolveConfig() clientcmd.ClientConfig {
+	pathOptions := clientcmd.NewDefaultPathOptions()
+	//cfg, err := pathOptions.GetStartingConfig()
+	//if err != nil {
+	//	return nil, err
+	//}
+	//if err = clientcmdapi.MinifyConfig(cfg); err != nil {
+	//	return nil, err
+	//}
+	//if err = clientcmdapi.FlattenConfig(cfg); err != nil {
+	//	return nil, err
+	//}
+	//return cfg, nil
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: pathOptions.GetDefaultFilename()},
+		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
+}
+
 func resolveClientConfig() (*rest.Config, error) {
 	inClusterConfig, err := rest.InClusterConfig()
 	if err == nil && inClusterConfig != nil {
 		return inClusterConfig, nil
 	}
-	pathOptions := clientcmd.NewDefaultPathOptions()
-	return clientcmd.BuildConfigFromFlags("", pathOptions.GetDefaultFilename())
+	return resolveConfig().ClientConfig()
 }
