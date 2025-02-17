@@ -63,3 +63,12 @@ func resolveClientConfig() (*rest.Config, error) {
 	}
 	return resolveConfig().ClientConfig()
 }
+
+func namespaceOrDefault(namespace string) string {
+	if namespace == "" {
+		if ns, _, nsErr := resolveConfig().Namespace(); nsErr == nil {
+			namespace = ns
+		}
+	}
+	return namespace
+}

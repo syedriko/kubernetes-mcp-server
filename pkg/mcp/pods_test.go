@@ -198,3 +198,47 @@ func TestPodsGet(t *testing.T) {
 		})
 	})
 }
+
+func TestPodsLog(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		t.Run("pods_log with nil name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_log", map[string]interface{}{})
+			if toolResult.IsError != true {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod log, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		podsLogNilNamespace, err := c.callTool("pods_log", map[string]interface{}{
+			"name": "a-pod-in-default",
+		})
+		t.Run("pods_log with name and nil namespace returns pod log", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if podsLogNilNamespace.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+		podsLogInNamespace, err := c.callTool("pods_log", map[string]interface{}{
+			"namespace": "ns-1",
+			"name":      "a-pod-in-ns-1",
+		})
+		t.Run("pods_log with name and namespace returns pod log", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if podsLogInNamespace.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+	})
+}
