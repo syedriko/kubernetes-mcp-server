@@ -17,22 +17,22 @@
   <a href="#getting-started">🚀 Getting Started</a>
 </p>
 
-## ✨ Features <a id="features" />
+## ✨ Features <a id="features"></a>
 
 A powerful and flexible Kubernetes MCP server implementation with support for OpenShift.
 
 - **✅ Configuration**: View and manage the Kubernetes `.kube/config`.
-  - View 
+  - **View** the current configuration.
 - **✅ Generic Kubernetes Resources**: Perform operations on any Kubernetes resource.
-  - Any CRUD operation (Create or Update, Get, List, Delete)
+  - Any CRUD operation (Create or Update, Get, List, Delete).
 - **✅ Pods**: Perform Pod-specific operations.
-  - List in all namespaces or in a specific namespace
-  - Get
-  - Delete
-  - Show logs
-  - Run
+  - **List** pods in all namespaces or in a specific namespace.
+  - **Get** a pod by name from the specified namespace.
+  - **Delete** a pod by name from the specified namespace.
+  - **Show logs** for a pod by name from the specified namespace.
+  - **Run** a container image in a pod and optionally expose it.
 
-## 🚀 Getting Started <a id="getting-started" />
+## 🚀 Getting Started <a id="getting-started"></a>
 
 ### Claude Desktop
 
