@@ -213,6 +213,17 @@ func TestPodsLog(t *testing.T) {
 				return
 			}
 		})
+		t.Run("pods_log with not found name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_log", map[string]interface{}{"name": "not-found"})
+			if toolResult.IsError != true {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod not-found log in namespace : pods \"not-found\" not found" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
 		podsLogNilNamespace, err := c.callTool("pods_log", map[string]interface{}{
 			"name": "a-pod-in-default",
 		})

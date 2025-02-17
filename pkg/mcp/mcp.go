@@ -22,6 +22,7 @@ func NewSever() *Sever {
 	}
 	s.initConfiguration()
 	s.initPods()
+	s.initResources()
 	return s
 }
 

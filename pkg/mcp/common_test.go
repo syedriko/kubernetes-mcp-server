@@ -147,11 +147,7 @@ func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 	c.withEnvTest()
 	pathOptions := clientcmd.NewDefaultPathOptions()
 	cfg, _ := clientcmd.BuildConfigFromFlags("", pathOptions.GetDefaultFilename())
-	kubernetesClient, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		panic(err)
-	}
-	return kubernetesClient
+	return kubernetes.NewForConfigOrDie(cfg)
 }
 
 // callTool helper function to call a tool by name with arguments
