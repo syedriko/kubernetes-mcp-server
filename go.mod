@@ -3,7 +3,7 @@ module github.com/manusa/kubernetes-mcp-server
 go 1.23.5
 
 require (
-	github.com/mark3labs/mcp-go v0.8.3
+	github.com/mark3labs/mcp-go v0.8.4
 	github.com/spf13/afero v1.12.0
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
@@ -16,10 +16,8 @@ require (
 	k8s.io/kubectl v0.32.1
 	sigs.k8s.io/controller-runtime v0.20.1
 	sigs.k8s.io/controller-runtime/tools/setup-envtest v0.0.0-20250211091558-894df3a7e664
+	sigs.k8s.io/yaml v1.4.0
 )
-
-// TODO: Remove once https://github.com/mark3labs/mcp-go/pull/18 is merged
-replace github.com/mark3labs/mcp-go => github.com/marcnuri-forks/mcp-go v0.0.0-20250213043348-ce583581e6be
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -97,5 +95,4 @@ require (
 	sigs.k8s.io/kustomize/api v0.18.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
-	sigs.k8s.io/yaml v1.4.0 // indirect
 )
