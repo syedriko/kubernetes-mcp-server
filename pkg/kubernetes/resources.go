@@ -47,6 +47,10 @@ func (k *Kubernetes) ResourcesGet(ctx context.Context, gvk *schema.GroupVersionK
 	if err != nil {
 		return "", err
 	}
+	// If it's a namespaced resource and namespace wasn't provided, try to use the default configured one
+	if namespaced, nsErr := k.isNamespaced(gvk); nsErr == nil && namespaced {
+		namespace = namespaceOrDefault(namespace)
+	}
 	rg, err := client.Resource(*gvr).Namespace(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
@@ -66,6 +70,22 @@ func (k *Kubernetes) ResourcesCreateOrUpdate(ctx context.Context, resource strin
 		parsedResources = append(parsedResources, &obj)
 	}
 	return k.resourcesCreateOrUpdate(ctx, parsedResources)
+}
+
+func (k *Kubernetes) ResourcesDelete(ctx context.Context, gvk *schema.GroupVersionKind, namespace, name string) error {
+	client, err := dynamic.NewForConfig(k.cfg)
+	if err != nil {
+		return err
+	}
+	gvr, err := k.resourceFor(gvk)
+	if err != nil {
+		return err
+	}
+	// If it's a namespaced resource and namespace wasn't provided, try to use the default configured one
+	if namespaced, nsErr := k.isNamespaced(gvk); nsErr == nil && namespaced {
+		namespace = namespaceOrDefault(namespace)
+	}
+	return client.Resource(*gvr).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func (k *Kubernetes) resourcesCreateOrUpdate(ctx context.Context, resources []*unstructured.Unstructured) (string, error) {

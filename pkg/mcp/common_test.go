@@ -163,6 +163,8 @@ func createTestData(ctx context.Context, kc *kubernetes.Clientset) {
 		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-1"}}, metav1.CreateOptions{})
 	_, _ = kc.CoreV1().Namespaces().
 		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-2"}}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Namespaces().
+		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-to-delete"}}, metav1.CreateOptions{})
 	_, _ = kc.CoreV1().Pods("default").
 		Create(ctx, &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-default"},
@@ -190,4 +192,6 @@ func createTestData(ctx context.Context, kc *kubernetes.Clientset) {
 				},
 			},
 		}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().ConfigMaps("default").
+		Create(ctx, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "a-configmap-to-delete"}}, metav1.CreateOptions{})
 }

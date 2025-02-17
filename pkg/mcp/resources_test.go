@@ -322,3 +322,109 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 		})
 	})
 }
+
+func TestResourcesDelete(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		t.Run("resources_delete with missing apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_delete", map[string]interface{}{})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_delete with missing kind returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "v1"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_delete with invalid apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "invalid/api/version", "kind": "Pod", "name": "a-pod"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_delete with nonexistent apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "custom.non.existent.example.com/v1", "kind": "Custom", "name": "a-custom"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to delete resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_delete with missing name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "v1", "kind": "Namespace"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		resourcesDeleteCm, err := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "v1", "kind": "ConfigMap", "name": "a-configmap-to-delete"})
+		t.Run("resources_delete with valid namespaced resource returns success", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if resourcesDeleteCm.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+			if resourcesDeleteCm.Content[0].(map[string]interface{})["text"].(string) != "Resource deleted successfully" {
+				t.Fatalf("invalid tool result content got: %v", resourcesDeleteCm.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		client := c.newKubernetesClient()
+		t.Run("resources_delete with valid namespaced resource deletes ConfigMap", func(t *testing.T) {
+			_, err := client.CoreV1().ConfigMaps("default").Get(c.ctx, "a-configmap-to-delete", metav1.GetOptions{})
+			if err == nil {
+				t.Fatalf("ConfigMap not deleted")
+				return
+			}
+		})
+		resourcesDeleteNamespace, err := c.callTool("resources_delete", map[string]interface{}{"apiVersion": "v1", "kind": "Namespace", "name": "ns-to-delete"})
+		t.Run("resources_delete with valid namespaced resource returns success", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if resourcesDeleteNamespace.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+			if resourcesDeleteNamespace.Content[0].(map[string]interface{})["text"].(string) != "Resource deleted successfully" {
+				t.Fatalf("invalid tool result content got: %v", resourcesDeleteNamespace.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_delete with valid namespaced resource deletes Namespace", func(t *testing.T) {
+			ns, err := client.CoreV1().Namespaces().Get(c.ctx, "ns-to-delete", metav1.GetOptions{})
+			if err == nil && ns != nil && ns.ObjectMeta.DeletionTimestamp == nil {
+				t.Fatalf("Namespace not deleted")
+				return
+			}
+		})
+	})
+}

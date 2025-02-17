@@ -52,6 +52,25 @@ func (s *Sever) initResources() {
 			mcp.Required(),
 		),
 	), resourcesCreateOrUpdate)
+	s.server.AddTool(mcp.NewTool(
+		"resources_delete",
+		mcp.WithDescription("Delete a Kubernetes resource in the current cluster by providing its apiVersion, kind, optionally the namespace, and its name"),
+		mcp.WithString("apiVersion",
+			mcp.Description("apiVersion of the resource (examples of valid apiVersion are: v1, apps/v1, networking.k8s.io/v1)"),
+			mcp.Required(),
+		),
+		mcp.WithString("kind",
+			mcp.Description("kind of the resource (examples of valid kind are: Pod, Service, Deployment, Ingress)"),
+			mcp.Required(),
+		),
+		mcp.WithString("namespace",
+			mcp.Description("Optional Namespace to delete the namespaced resource from (ignored in case of cluster scoped resources). If not provided, will delete resource from configured namespace"),
+		),
+		mcp.WithString("name",
+			mcp.Description("Name of the resource"),
+			mcp.Required(),
+		),
+	), resourcesDelete)
 }
 
 func resourcesList(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -112,6 +131,30 @@ func resourcesCreateOrUpdate(ctx context.Context, ctr mcp.CallToolRequest) (*mcp
 		return NewTextResult("", fmt.Errorf("failed to create or update resources: %v", err)), nil
 	}
 	return NewTextResult(ret, err), nil
+}
+
+func resourcesDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	k, err := kubernetes.NewKubernetes()
+	if err != nil {
+		return NewTextResult("", fmt.Errorf("failed to delete resource: %v", err)), nil
+	}
+	namespace := ctr.Params.Arguments["namespace"]
+	if namespace == nil {
+		namespace = ""
+	}
+	gvk, err := parseGroupVersionKind(ctr.Params.Arguments)
+	if err != nil {
+		return NewTextResult("", fmt.Errorf("failed to delete resource, %s", err)), nil
+	}
+	name := ctr.Params.Arguments["name"]
+	if name == nil {
+		return NewTextResult("", errors.New("failed to delete resource, missing argument name")), nil
+	}
+	err = k.ResourcesDelete(ctx, gvk, namespace.(string), name.(string))
+	if err != nil {
+		return NewTextResult("", fmt.Errorf("failed to delete resource: %v", err)), nil
+	}
+	return NewTextResult("Resource deleted successfully", err), nil
 }
 
 func parseGroupVersionKind(arguments map[string]interface{}) (*schema.GroupVersionKind, error) {
