@@ -1,11 +1,11 @@
 package kubernetes
 
 import (
-	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/kubectl/pkg/scheme"
+	"sigs.k8s.io/yaml"
 )
 
 type Kubernetes struct {
@@ -21,10 +21,20 @@ func NewKubernetes() (*Kubernetes, error) {
 	return &Kubernetes{cfg: cfg}, nil
 }
 
-func defaultPrintFlags() *genericclioptions.PrintFlags {
-	return genericclioptions.NewPrintFlags("").
-		WithTypeSetter(scheme.Scheme).
-		WithDefaultOutput("yaml")
+func marshal(v any) (string, error) {
+	switch t := v.(type) {
+	case []unstructured.Unstructured:
+		for i := range t {
+			t[i].SetManagedFields(nil)
+		}
+	case unstructured.Unstructured:
+		t.SetManagedFields(nil)
+	}
+	ret, err := yaml.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return string(ret), nil
 }
 
 func resolveClientConfig() (*rest.Config, error) {

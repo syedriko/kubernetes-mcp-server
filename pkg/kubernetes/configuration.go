@@ -1,33 +1,27 @@
 package kubernetes
 
 import (
-	"bytes"
-	"k8s.io/cli-runtime/pkg/genericiooptions"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/component-base/cli/flag"
-	"k8s.io/kubectl/pkg/cmd/config"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 )
 
 func ConfigurationView() (string, error) {
-	outBuffer := &bytes.Buffer{}
+	// TODO: consider in cluster run mode (current approach only shows kubeconfig)
 	pathOptions := clientcmd.NewDefaultPathOptions()
-	ioStreams := genericiooptions.IOStreams{In: nil, Out: outBuffer, ErrOut: outBuffer}
-	o := &config.ViewOptions{
-		IOStreams:    ioStreams,
-		ConfigAccess: pathOptions,
-		PrintFlags:   defaultPrintFlags(),
-		Flatten:      true,
-		Minify:       true,
-		Merge:        flag.True,
-	}
-	printer, err := o.PrintFlags.ToPrinter()
+	cfg, err := pathOptions.GetStartingConfig()
 	if err != nil {
 		return "", err
 	}
-	o.PrintObject = printer.PrintObj
-	err = o.Run()
+	if err = clientcmdapi.MinifyConfig(cfg); err != nil {
+		return "", err
+	}
+	if err = clientcmdapi.FlattenConfig(cfg); err != nil {
+		return "", err
+	}
+	convertedObj, err := latest.Scheme.ConvertToVersion(cfg, latest.ExternalVersion)
 	if err != nil {
 		return "", err
 	}
-	return outBuffer.String(), nil
+	return marshal(convertedObj)
 }

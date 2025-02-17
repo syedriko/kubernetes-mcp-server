@@ -3,13 +3,11 @@ package kubernetes
 import (
 	"context"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	memory "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/restmapper"
-	"sigs.k8s.io/yaml"
 )
 
 // TODO: WIP
@@ -27,22 +25,6 @@ func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersion
 		return "", err
 	}
 	return marshal(rl.Items)
-}
-
-func marshal(v any) (string, error) {
-	switch t := v.(type) {
-	case []unstructured.Unstructured:
-		for i := range t {
-			t[i].SetManagedFields(nil)
-		}
-	case unstructured.Unstructured:
-		t.SetManagedFields(nil)
-	}
-	ret, err := yaml.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(ret), nil
 }
 
 func (k *Kubernetes) resourceFor(gvk *schema.GroupVersionKind) (*schema.GroupVersionResource, error) {
