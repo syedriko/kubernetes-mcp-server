@@ -1,10 +1,6 @@
 # If you update this file, please follow
 # https://suva.sh/posts/well-documented-makefiles
 
-## --------------------------------------
-## General
-## --------------------------------------
-
 .DEFAULT_GOAL := help
 
 PACKAGE = $(shell go list -m)
@@ -19,7 +15,8 @@ LD_FLAGS = -s -w \
 	-X '$(PACKAGE)/pkg/version.BinaryName=$(BINARY_NAME)'
 COMMON_BUILD_ARGS = -ldflags "$(LD_FLAGS)"
 
-NPM_VERSION ?= $(shell echo $(GIT_VERSION) | sed 's/^v//')
+# NPM version should not append the -dirty flag
+NPM_VERSION ?= $(shell echo $(shell git describe --tags --always) | sed 's/^v//')
 OSES = darwin linux windows
 ARCHS = amd64 arm64
 
@@ -57,8 +54,8 @@ build-all-platforms: clean tidy format ## Build the project for all platforms
 		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd/kubernetes-mcp-server; \
 	))
 
-.PHONY: npm
-npm: build-all-platforms ## Create the npm packages for each platform
+.PHONY: npm-copy-binaries
+npm-copy-binaries: build-all-platforms ## Copy the binaries to each npm package
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		EXECUTABLE=./$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,); \
 		DIRNAME=$(BINARY_NAME)-$(os)-$(arch); \
@@ -67,7 +64,7 @@ npm: build-all-platforms ## Create the npm packages for each platform
 	))
 
 .PHONY: npm-publish
-npm-publish: npm ## Publish the npm packages
+npm-publish: npm-copy-binaries ## Publish the npm packages
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		DIRNAME="$(BINARY_NAME)-$(os)-$(arch)"; \
 		cd npm/$$DIRNAME; \
