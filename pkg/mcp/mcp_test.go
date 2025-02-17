@@ -6,7 +6,18 @@ import (
 )
 
 func TestTools(t *testing.T) {
-	expectedNames := []string{"pods_list", "pods_list_in_namespace", "configuration_view"}
+	expectedNames := []string{
+		"configuration_view",
+		"pods_list",
+		"pods_list_in_namespace",
+		"pods_get",
+		"pods_log",
+		"pods_run",
+		"resources_list",
+		"resources_get",
+		"resources_create_or_update",
+		"resources_delete",
+	}
 	testCase(t, func(c *mcpContext) {
 		tools, err := c.mcpClient.ListTools(c.ctx, mcp.ListToolsRequest{})
 		t.Run("ListTools returns tools", func(t *testing.T) {

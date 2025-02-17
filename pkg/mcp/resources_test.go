@@ -277,7 +277,7 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 				return
 			}
 			if resourcesCreateOrUpdateCustom.IsError {
-				t.Fatalf("call tool failed")
+				t.Fatalf("call tool failed, got: %v", resourcesCreateOrUpdateCustom.Content)
 				return
 			}
 		})
