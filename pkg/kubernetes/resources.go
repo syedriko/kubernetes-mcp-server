@@ -22,7 +22,6 @@ const (
 	AppKubernetesPartOf    = "app.kubernetes.io/part-of"
 )
 
-// TODO: WIP
 func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersionKind, namespace string) (string, error) {
 	client, err := dynamic.NewForConfig(k.cfg)
 	if err != nil {

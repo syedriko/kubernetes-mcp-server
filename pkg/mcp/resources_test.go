@@ -3,10 +3,87 @@ package mcp
 import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	"sigs.k8s.io/yaml"
 	"testing"
 )
+
+func TestResourcesList(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		t.Run("resources_list with missing apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_list", map[string]interface{}{})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_list with missing kind returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_list", map[string]interface{}{"apiVersion": "v1"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_list with invalid apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_list", map[string]interface{}{"apiVersion": "invalid/api/version", "kind": "Pod"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("resources_list with nonexistent apiVersion returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("resources_list", map[string]interface{}{"apiVersion": "custom.non.existent.example.com/v1", "kind": "Custom"})
+			if !toolResult.IsError {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to list resources: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		namespaces, err := c.callTool("resources_list", map[string]interface{}{"apiVersion": "v1", "kind": "Namespace"})
+		t.Run("resources_list returns namespaces", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if namespaces.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+		var decodedNamespaces []unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(namespaces.Content[0].(map[string]interface{})["text"].(string)), &decodedNamespaces)
+		t.Run("resources_list has yaml content", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("invalid tool result content %v", err)
+				return
+			}
+		})
+		t.Run("resources_list returns more than 2 items", func(t *testing.T) {
+			if len(decodedNamespaces) < 3 {
+				t.Fatalf("invalid namespace count, expected >2, got %v", len(decodedNamespaces))
+				return
+			}
+		})
+	})
+}
 
 func TestResourcesCreateOrUpdate(t *testing.T) {
 	testCase(t, func(c *mcpContext) {
