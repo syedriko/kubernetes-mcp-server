@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	v1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -262,13 +261,14 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 			}
 		})
 		t.Run("resources_create_or_update with valid cluster-scoped json resource creates custom resource definition", func(t *testing.T) {
-			apiExtensionsV1Client := v1.NewForConfigOrDie(envTestRestConfig)
+			apiExtensionsV1Client := c.newApiExtensionsClient()
 			_, err = apiExtensionsV1Client.CustomResourceDefinitions().Get(c.ctx, "customs.example.com", metav1.GetOptions{})
 			if err != nil {
 				t.Fatalf("custom resource definition not found")
 				return
 			}
 		})
+		c.crdWaitUntilReady("customs.example.com")
 		customJson := "{\"apiVersion\": \"example.com/v1\", \"kind\": \"Custom\", \"metadata\": {\"name\": \"a-custom-resource\"}}"
 		resourcesCreateOrUpdateCustom, err := c.callTool("resources_create_or_update", map[string]interface{}{"resource": customJson})
 		t.Run("resources_create_or_update with valid namespaced json resource returns success", func(t *testing.T) {

@@ -145,3 +145,15 @@ func (k *Kubernetes) isNamespaced(gvk *schema.GroupVersionKind) (bool, error) {
 	}
 	return false, nil
 }
+
+func (k *Kubernetes) supportsGroupVersion(groupVersion string) bool {
+	d, err := discovery.NewDiscoveryClientForConfig(k.cfg)
+	if err != nil {
+		return false
+	}
+	_, err = d.ServerResourcesForGroupVersion(groupVersion)
+	if err == nil {
+		return true
+	}
+	return false
+}

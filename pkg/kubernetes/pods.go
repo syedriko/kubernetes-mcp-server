@@ -31,6 +31,11 @@ func (k *Kubernetes) PodsGet(ctx context.Context, namespace, name string) (strin
 	}, namespaceOrDefault(namespace), name)
 }
 
+func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (string, error) {
+	// TODO
+	return "", nil
+}
+
 func (k *Kubernetes) PodsLog(ctx context.Context, namespace, name string) (string, error) {
 	cs, err := kubernetes.NewForConfig(k.cfg)
 	if err != nil {
@@ -75,7 +80,7 @@ func (k *Kubernetes) PodsRun(ctx context.Context, namespace, name, image string,
 	resources = append(resources, pod)
 	if port > 0 {
 		pod.Spec.Containers[0].Ports = []v1.ContainerPort{{ContainerPort: port}}
-		svc := &v1.Service{
+		resources = append(resources, &v1.Service{
 			TypeMeta:   metav1.TypeMeta{APIVersion: "v1", Kind: "Service"},
 			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespaceOrDefault(namespace), Labels: labels},
 			Spec: v1.ServiceSpec{
@@ -83,8 +88,35 @@ func (k *Kubernetes) PodsRun(ctx context.Context, namespace, name, image string,
 				Type:     v1.ServiceTypeClusterIP,
 				Ports:    []v1.ServicePort{{Port: port, TargetPort: intstr.FromInt32(port)}},
 			},
-		}
-		resources = append(resources, svc)
+		})
+	}
+	if port > 0 && k.supportsGroupVersion("route.openshift.io/v1") {
+		resources = append(resources, &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"apiVersion": "route.openshift.io/v1",
+				"kind":       "Route",
+				"metadata": map[string]interface{}{
+					"name":      name,
+					"namespace": namespaceOrDefault(namespace),
+					"labels":    labels,
+				},
+				"spec": map[string]interface{}{
+					"to": map[string]interface{}{
+						"kind":   "Service",
+						"name":   name,
+						"weight": 100,
+					},
+					"port": map[string]interface{}{
+						"targetPort": intstr.FromInt32(port),
+					},
+					"tls": map[string]interface{}{
+						"termination":                   "edge",
+						"insecureEdgeTerminationPolicy": "Redirect",
+					},
+				},
+			},
+		})
+
 	}
 
 	// Convert the objects to Unstructured and reuse resourcesCreateOrUpdate functionality

@@ -2,16 +2,22 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/spf13/afero"
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1spec "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
+	toolswatch "k8s.io/client-go/tools/watch"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -142,12 +148,72 @@ func (c *mcpContext) withEnvTest() {
 	c.withKubeConfig(envTestRestConfig)
 }
 
+// inOpenShift sets up the kubernetes environment to seem to be running OpenShift
+func (c *mcpContext) inOpenShift() func() {
+	c.withKubeConfig(envTestRestConfig)
+	return c.crdApply(`
+          {
+            "apiVersion": "apiextensions.k8s.io/v1",
+            "kind": "CustomResourceDefinition",
+            "metadata": {"name": "routes.route.openshift.io"},
+            "spec": {
+              "group": "route.openshift.io",
+              "versions": [{
+                "name": "v1","served": true,"storage": true,
+                "schema": {"openAPIV3Schema": {"type": "object","x-kubernetes-preserve-unknown-fields": true}}
+              }],
+              "scope": "Namespaced",
+              "names": {"plural": "routes","singular": "route","kind": "Route"}
+            }
+          }`)
+}
+
 // newKubernetesClient creates a new Kubernetes client with the current kubeconfig
 func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 	c.withEnvTest()
-	pathOptions := clientcmd.NewDefaultPathOptions()
-	cfg, _ := clientcmd.BuildConfigFromFlags("", pathOptions.GetDefaultFilename())
+	cfg, _ := clientcmd.BuildConfigFromFlags("", clientcmd.NewDefaultPathOptions().GetDefaultFilename())
 	return kubernetes.NewForConfigOrDie(cfg)
+}
+
+// newApiExtensionsClient creates a new ApiExtensions client with the envTest kubeconfig
+func (c *mcpContext) newApiExtensionsClient() *apiextensionsv1.ApiextensionsV1Client {
+	return apiextensionsv1.NewForConfigOrDie(envTestRestConfig)
+}
+
+// crdApply creates a CRD from the provided resource string and waits for it to be established, returns a cleanup function
+func (c *mcpContext) crdApply(resource string) func() {
+	apiExtensionsV1Client := c.newApiExtensionsClient()
+	var crd = &apiextensionsv1spec.CustomResourceDefinition{}
+	err := json.Unmarshal([]byte(resource), crd)
+	_, err = apiExtensionsV1Client.CustomResourceDefinitions().Create(c.ctx, crd, metav1.CreateOptions{})
+	if err != nil {
+		panic(fmt.Errorf("failed to create CRD %v", err))
+	}
+	c.crdWaitUntilReady(crd.Name)
+	return func() {
+		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, "routes.route.openshift.io", metav1.DeleteOptions{})
+		if err != nil {
+			panic(fmt.Errorf("failed to delete CRD %v", err))
+		}
+	}
+}
+
+// crdWaitUntilReady waits for a CRD to be established
+func (c *mcpContext) crdWaitUntilReady(name string) {
+	watcher, err := c.newApiExtensionsClient().CustomResourceDefinitions().Watch(c.ctx, metav1.ListOptions{
+		FieldSelector: "metadata.name=" + name,
+	})
+	_, err = toolswatch.UntilWithoutRetry(c.ctx, watcher, func(event watch.Event) (bool, error) {
+		for _, c := range event.Object.(*apiextensionsv1spec.CustomResourceDefinition).Status.Conditions {
+			if c.Type == apiextensionsv1spec.Established && c.Status == apiextensionsv1spec.ConditionTrue {
+				return true, nil
+			}
+		}
+		return false, nil
+	})
+	if err != nil {
+		panic(fmt.Errorf("failed to wait for CRD %v", err))
+	}
 }
 
 // callTool helper function to call a tool by name with arguments

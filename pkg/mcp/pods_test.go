@@ -404,3 +404,39 @@ func TestPodsRun(t *testing.T) {
 		})
 	})
 }
+
+func TestPodsRunInOpenShift(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
+		t.Run("pods_run with image, namespace, and port returns route with port", func(t *testing.T) {
+			podsRunInOpenShift, err := c.callTool("pods_run", map[string]interface{}{"image": "nginx", "port": 80})
+			if err != nil {
+				t.Errorf("call tool failed %v", err)
+				return
+			}
+			if podsRunInOpenShift.IsError {
+				t.Errorf("call tool failed")
+				return
+			}
+			var decodedPodServiceRoute []unstructured.Unstructured
+			err = yaml.Unmarshal([]byte(podsRunInOpenShift.Content[0].(map[string]interface{})["text"].(string)), &decodedPodServiceRoute)
+			if err != nil {
+				t.Errorf("invalid tool result content %v", err)
+				return
+			}
+			if len(decodedPodServiceRoute) != 3 {
+				t.Errorf("invalid pods count, expected 3, got %v", len(decodedPodServiceRoute))
+				return
+			}
+			if decodedPodServiceRoute[2].GetKind() != "Route" {
+				t.Errorf("invalid route kind, expected Route, got %v", decodedPodServiceRoute[2].GetKind())
+				return
+			}
+			targetPort := decodedPodServiceRoute[2].Object["spec"].(map[string]interface{})["port"].(map[string]interface{})["targetPort"].(int64)
+			if targetPort != 80 {
+				t.Errorf("invalid route target port, expected 80, got %v", targetPort)
+				return
+			}
+		})
+	})
+}
