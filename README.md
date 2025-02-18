@@ -7,6 +7,8 @@
 
 [✨ Features](#features) | [🚀 Getting Started](#getting-started)
 
+https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
+
 ## ✨ Features <a id="features"></a>
 
 A powerful and flexible Kubernetes MCP server implementation with support for OpenShift.
