@@ -1,21 +1,11 @@
 # Kubernetes MCP Server
 
-<p align="center">
-  <a href="https://github.com/manusa/kubernetes-mcp-server/blob/main/LICENSE">
-    <img alt="GitHub License" src="https://img.shields.io/github/license/manusa/kubernetes-mcp-server" /></a>
-  <a href="https://www.npmjs.com/package/kubernetes-mcp-server">
-    <img alt="npm" src="https://img.shields.io/npm/v/kubernetes-mcp-server" /></a>
-  <a href="https://github.com/manusa/kubernetes-mcp-server/releases/latest">
-    <img alt="GitHub release (latest SemVer)" src="https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver" /></a>
-  <a href="https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml">
-    <img src="https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg" alt="Build status badge" /></a>
-</p>
+[![GitHub License](https://img.shields.io/github/license/manusa/kubernetes-mcp-server)](https://github.com/manusa/kubernetes-mcp-server/blob/main/LICENSE)
+[![npm](https://img.shields.io/npm/v/kubernetes-mcp-server)](https://www.npmjs.com/package/kubernetes-mcp-server)
+[![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver)](https://github.com/manusa/kubernetes-mcp-server/releases/latest)
+[![Build](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg)](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml)
 
-
-<p align="center">
-  <a href="#features">✨ Features</a> |
-  <a href="#getting-started">🚀 Getting Started</a>
-</p>
+[✨ Features](#features) | [🚀 Getting Started](#getting-started)
 
 ## ✨ Features <a id="features"></a>
 
