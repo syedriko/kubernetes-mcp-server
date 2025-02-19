@@ -6,10 +6,12 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	labelutil "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -32,8 +34,53 @@ func (k *Kubernetes) PodsGet(ctx context.Context, namespace, name string) (strin
 }
 
 func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (string, error) {
-	// TODO
-	return "", nil
+	cs, err := kubernetes.NewForConfig(k.cfg)
+	if err != nil {
+		return "", err
+	}
+
+	namespace = namespaceOrDefault(namespace)
+	pod, err := cs.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	isManaged := pod.GetLabels()[AppKubernetesManagedBy] == version.BinaryName
+	managedLabelSelector := labelutil.Set{
+		AppKubernetesManagedBy: version.BinaryName,
+		AppKubernetesName:      pod.GetLabels()[AppKubernetesName],
+	}.AsSelector()
+
+	// Delete managed service
+	if isManaged {
+		if sl, _ := cs.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{
+			LabelSelector: managedLabelSelector.String(),
+		}); sl != nil {
+			for _, svc := range sl.Items {
+				_ = cs.CoreV1().Services(namespace).Delete(ctx, svc.Name, metav1.DeleteOptions{})
+			}
+		}
+	}
+
+	// Delete managed Route
+	if isManaged && k.supportsGroupVersion("route.openshift.io/v1") {
+		dynamicClient, dErr := dynamic.NewForConfig(k.cfg)
+		if dErr != nil {
+			return "", dErr
+		}
+		routeResources := dynamicClient.
+			Resource(schema.GroupVersionResource{Group: "route.openshift.io", Version: "v1", Resource: "routes"}).
+			Namespace(namespace)
+		if rl, _ := routeResources.List(ctx, metav1.ListOptions{
+			LabelSelector: managedLabelSelector.String(),
+		}); rl != nil {
+			for _, route := range rl.Items {
+				_ = routeResources.Delete(ctx, route.GetName(), metav1.DeleteOptions{})
+			}
+		}
+
+	}
+	return "Pod deleted successfully", cs.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func (k *Kubernetes) PodsLog(ctx context.Context, namespace, name string) (string, error) {

@@ -11,6 +11,7 @@ func TestTools(t *testing.T) {
 		"pods_list",
 		"pods_list_in_namespace",
 		"pods_get",
+		"pods_delete",
 		"pods_log",
 		"pods_run",
 		"resources_list",

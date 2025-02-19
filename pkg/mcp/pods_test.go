@@ -1,7 +1,11 @@
 package mcp
 
 import (
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
 	"strings"
 	"testing"
@@ -134,6 +138,17 @@ func TestPodsGet(t *testing.T) {
 				return
 			}
 		})
+		t.Run("pods_get with not found name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_get", map[string]interface{}{"name": "not-found"})
+			if toolResult.IsError != true {
+				t.Fatalf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod not-found in namespace : pods \"not-found\" not found" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
 		podsGetNilNamespace, err := c.callTool("pods_get", map[string]interface{}{
 			"name": "a-pod-in-default",
 		})
@@ -194,6 +209,194 @@ func TestPodsGet(t *testing.T) {
 			}
 			if decodedInNamespace.GetNamespace() != "ns-1" {
 				t.Fatalf("invalid pod namespace, ns-1 ns-1, got %v", decodedInNamespace.GetNamespace())
+				return
+			}
+		})
+	})
+}
+
+func TestPodsDelete(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		// Errors
+		t.Run("pods_delete with nil name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_delete", map[string]interface{}{})
+			if toolResult.IsError != true {
+				t.Errorf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete pod, missing argument name" {
+				t.Errorf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("pods_delete with not found name returns error", func(t *testing.T) {
+			toolResult, _ := c.callTool("pods_delete", map[string]interface{}{"name": "not-found"})
+			if toolResult.IsError != true {
+				t.Errorf("call tool should fail")
+				return
+			}
+			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete pod not-found in namespace : pods \"not-found\" not found" {
+				t.Errorf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		// Default/nil Namespace
+		kc := c.newKubernetesClient()
+		_, _ = kc.CoreV1().Pods("default").Create(c.ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-to-delete"},
+			Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+		}, metav1.CreateOptions{})
+		podsDeleteNilNamespace, err := c.callTool("pods_delete", map[string]interface{}{
+			"name": "a-pod-to-delete",
+		})
+		t.Run("pods_delete with name and nil namespace returns success", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("call tool failed %v", err)
+				return
+			}
+			if podsDeleteNilNamespace.IsError {
+				t.Errorf("call tool failed")
+				return
+			}
+			if podsDeleteNilNamespace.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteNilNamespace.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("pods_delete with name and nil namespace deletes Pod", func(t *testing.T) {
+			p, pErr := kc.CoreV1().Pods("default").Get(c.ctx, "a-pod-to-delete", metav1.GetOptions{})
+			if pErr == nil && p != nil && p.ObjectMeta.DeletionTimestamp == nil {
+				t.Errorf("Pod not deleted")
+				return
+			}
+		})
+		// Provided Namespace
+		_, _ = kc.CoreV1().Pods("ns-1").Create(c.ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-to-delete-in-ns-1"},
+			Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+		}, metav1.CreateOptions{})
+		podsDeleteInNamespace, err := c.callTool("pods_delete", map[string]interface{}{
+			"namespace": "ns-1",
+			"name":      "a-pod-to-delete-in-ns-1",
+		})
+		t.Run("pods_delete with name and namespace returns success", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("call tool failed %v", err)
+				return
+			}
+			if podsDeleteInNamespace.IsError {
+				t.Errorf("call tool failed")
+				return
+			}
+			if podsDeleteInNamespace.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteInNamespace.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("pods_delete with name and namespace deletes Pod", func(t *testing.T) {
+			p, pErr := kc.CoreV1().Pods("ns-1").Get(c.ctx, "a-pod-to-delete-in-ns-1", metav1.GetOptions{})
+			if pErr == nil && p != nil && p.ObjectMeta.DeletionTimestamp == nil {
+				t.Errorf("Pod not deleted")
+				return
+			}
+		})
+		// Managed Pod
+		managedLabels := map[string]string{
+			"app.kubernetes.io/managed-by": "kubernetes-mcp-server",
+			"app.kubernetes.io/name":       "a-manged-pod-to-delete",
+		}
+		_, _ = kc.CoreV1().Pods("default").Create(c.ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-managed-pod-to-delete", Labels: managedLabels},
+			Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+		}, metav1.CreateOptions{})
+		_, _ = kc.CoreV1().Services("default").Create(c.ctx, &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-managed-service-to-delete", Labels: managedLabels},
+			Spec:       corev1.ServiceSpec{Selector: managedLabels, Ports: []corev1.ServicePort{{Port: 80}}},
+		}, metav1.CreateOptions{})
+		podsDeleteManaged, err := c.callTool("pods_delete", map[string]interface{}{
+			"name": "a-managed-pod-to-delete",
+		})
+		t.Run("pods_delete with managed pod returns success", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("call tool failed %v", err)
+				return
+			}
+			if podsDeleteManaged.IsError {
+				t.Errorf("call tool failed")
+				return
+			}
+			if podsDeleteManaged.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteManaged.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("pods_delete with managed pod deletes Pod and Service", func(t *testing.T) {
+			p, pErr := kc.CoreV1().Pods("default").Get(c.ctx, "a-managed-pod-to-delete", metav1.GetOptions{})
+			if pErr == nil && p != nil && p.ObjectMeta.DeletionTimestamp == nil {
+				t.Errorf("Pod not deleted")
+				return
+			}
+			s, sErr := kc.CoreV1().Services("default").Get(c.ctx, "a-managed-service-to-delete", metav1.GetOptions{})
+			if sErr == nil && s != nil && s.ObjectMeta.DeletionTimestamp == nil {
+				t.Errorf("Service not deleted")
+				return
+			}
+		})
+	})
+}
+
+func TestPodsDeleteInOpenShift(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		// Managed Pod in OpenShift
+		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
+		managedLabels := map[string]string{
+			"app.kubernetes.io/managed-by": "kubernetes-mcp-server",
+			"app.kubernetes.io/name":       "a-manged-pod-to-delete",
+		}
+		kc := c.newKubernetesClient()
+		_, _ = kc.CoreV1().Pods("default").Create(c.ctx, &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{Name: "a-managed-pod-to-delete-in-openshift", Labels: managedLabels},
+			Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+		}, metav1.CreateOptions{})
+		dynamicClient := dynamic.NewForConfigOrDie(envTestRestConfig)
+		_, _ = dynamicClient.Resource(schema.GroupVersionResource{Group: "route.openshift.io", Version: "v1", Resource: "routes"}).
+			Namespace("default").Create(c.ctx, &unstructured.Unstructured{Object: map[string]interface{}{
+			"apiVersion": "route.openshift.io/v1",
+			"kind":       "Route",
+			"metadata": map[string]interface{}{
+				"name":   "a-managed-route-to-delete",
+				"labels": managedLabels,
+			},
+		}}, metav1.CreateOptions{})
+		podsDeleteManagedOpenShift, err := c.callTool("pods_delete", map[string]interface{}{
+			"name": "a-managed-pod-to-delete-in-openshift",
+		})
+		t.Run("pods_delete with managed pod in OpenShift returns success", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("call tool failed %v", err)
+				return
+			}
+			if podsDeleteManagedOpenShift.IsError {
+				t.Errorf("call tool failed")
+				return
+			}
+			if podsDeleteManagedOpenShift.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteManagedOpenShift.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+		})
+		t.Run("pods_delete with managed pod in OpenShift deletes Pod and Route", func(t *testing.T) {
+			p, pErr := kc.CoreV1().Pods("default").Get(c.ctx, "a-managed-pod-to-delete-in-openshift", metav1.GetOptions{})
+			if pErr == nil && p != nil && p.ObjectMeta.DeletionTimestamp == nil {
+				t.Errorf("Pod not deleted")
+				return
+			}
+			r, rErr := dynamicClient.
+				Resource(schema.GroupVersionResource{Group: "route.openshift.io", Version: "v1", Resource: "routes"}).
+				Namespace("default").Get(c.ctx, "a-managed-route-to-delete", metav1.GetOptions{})
+			if rErr == nil && r != nil && r.GetDeletionTimestamp() == nil {
+				t.Errorf("Route not deleted")
 				return
 			}
 		})

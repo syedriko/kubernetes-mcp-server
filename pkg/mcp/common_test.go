@@ -231,33 +231,18 @@ func createTestData(ctx context.Context, kc *kubernetes.Clientset) {
 		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-2"}}, metav1.CreateOptions{})
 	_, _ = kc.CoreV1().Namespaces().
 		Create(ctx, &corev1.Namespace{ObjectMeta: metav1.ObjectMeta{Name: "ns-to-delete"}}, metav1.CreateOptions{})
-	_, _ = kc.CoreV1().Pods("default").
-		Create(ctx, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-default"},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "nginx", Image: "nginx"},
-				},
-			},
-		}, metav1.CreateOptions{})
-	_, _ = kc.CoreV1().Pods("ns-1").
-		Create(ctx, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-1"},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "nginx", Image: "nginx"},
-				},
-			},
-		}, metav1.CreateOptions{})
-	_, _ = kc.CoreV1().Pods("ns-2").
-		Create(ctx, &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-2"},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{Name: "nginx", Image: "nginx"},
-				},
-			},
-		}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("default").Create(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-default"},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+	}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("ns-1").Create(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-1"},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+	}, metav1.CreateOptions{})
+	_, _ = kc.CoreV1().Pods("ns-2").Create(ctx, &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "a-pod-in-ns-2"},
+		Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: "nginx", Image: "nginx"}}},
+	}, metav1.CreateOptions{})
 	_, _ = kc.CoreV1().ConfigMaps("default").
 		Create(ctx, &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "a-configmap-to-delete"}}, metav1.CreateOptions{})
 }
