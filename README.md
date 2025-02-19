@@ -5,7 +5,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver)](https://github.com/manusa/kubernetes-mcp-server/releases/latest)
 [![Build](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg)](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml)
 
-[✨ Features](#features) | [🚀 Getting Started](#getting-started)
+[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos)
 
 https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
@@ -62,3 +62,12 @@ extensions:
       - kubernetes-mcp-server@latest
 
 ```
+
+## 🎥 Demos <a id="demos"></a>
+
+### Diagnosing and automatically fixing an OpenShift Deployment
+
+Demo showcasing how Kubernetes MCP server is leveraged by Claude Desktop to automatically diagnose and fix a deployment in OpenShift without any user assistance.
+
+https://github.com/user-attachments/assets/a576176d-a142-4c19-b9aa-a83dc4b8d941
+
