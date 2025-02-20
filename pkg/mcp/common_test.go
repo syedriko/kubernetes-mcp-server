@@ -89,7 +89,7 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 	var err error
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 	c.tempDir = t.TempDir()
-	_ = os.Unsetenv("KUBECONFIG")
+	c.withKubeConfig(nil)
 	if c.mcpServer, err = NewSever(); err != nil {
 		t.Fatal(err)
 		return
@@ -99,7 +99,6 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 		t.Fatal(err)
 		return
 	}
-	c.withKubeConfig(nil)
 	if err = c.mcpClient.Start(c.ctx); err != nil {
 		t.Fatal(err)
 		return
@@ -146,8 +145,10 @@ func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 	kubeConfig := filepath.Join(c.tempDir, "config")
 	_ = clientcmd.WriteToFile(*fakeConfig, kubeConfig)
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
-	if err := c.mcpServer.reloadKubernetesClient(); err != nil {
-		panic(err)
+	if c.mcpServer != nil {
+		if err := c.mcpServer.reloadKubernetesClient(); err != nil {
+			panic(err)
+		}
 	}
 	return fakeConfig
 }
