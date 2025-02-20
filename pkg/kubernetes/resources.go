@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
+	authv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -22,6 +23,11 @@ func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersion
 	gvr, err := k.resourceFor(gvk)
 	if err != nil {
 		return "", err
+	}
+	// Check if operation is allowed for all namespaces (applicable for namespaced resources)
+	isNamespaced, _ := k.isNamespaced(gvk)
+	if isNamespaced && !k.canIUse(ctx, gvr, namespace, "list") && namespace == "" {
+		namespace = configuredNamespace()
 	}
 	rl, err := k.dynamicClient.Resource(*gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -124,4 +130,21 @@ func (k *Kubernetes) supportsGroupVersion(groupVersion string) bool {
 		return false
 	}
 	return true
+}
+
+func (k *Kubernetes) canIUse(ctx context.Context, gvr *schema.GroupVersionResource, namespace, verb string) bool {
+	response, err := k.clientSet.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, &authv1.SelfSubjectAccessReview{
+		Spec: authv1.SelfSubjectAccessReviewSpec{ResourceAttributes: &authv1.ResourceAttributes{
+			Namespace: namespace,
+			Verb:      verb,
+			Group:     gvr.Group,
+			Version:   gvr.Version,
+			Resource:  gvr.Resource,
+		}},
+	}, metav1.CreateOptions{})
+	if err != nil {
+		// TODO: maybe return the error too
+		return false
+	}
+	return response.Status.Allowed
 }

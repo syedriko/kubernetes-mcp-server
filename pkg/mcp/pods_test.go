@@ -2,6 +2,7 @@ package mcp
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -62,6 +63,65 @@ func TestPodsListInAllNamespaces(t *testing.T) {
 		t.Run("pods_list omits managed fields", func(t *testing.T) {
 			if decoded[1].GetManagedFields() != nil {
 				t.Fatalf("managed fields should be omitted, got %v", decoded[0].GetManagedFields())
+				return
+			}
+		})
+	})
+}
+
+func TestPodsListInAllNamespacesUnauthorized(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		c.withEnvTest()
+		defer restoreAuth(c.ctx)
+		client := c.newKubernetesClient()
+		// Authorize user only for default/configured namespace
+		r, _ := client.RbacV1().Roles("default").Create(c.ctx, &rbacv1.Role{
+			ObjectMeta: metav1.ObjectMeta{Name: "allow-pods-list"},
+			Rules: []rbacv1.PolicyRule{{
+				Verbs:     []string{"get", "list"},
+				APIGroups: []string{""},
+				Resources: []string{"pods"},
+			}},
+		}, metav1.CreateOptions{})
+		_, _ = client.RbacV1().RoleBindings("default").Create(c.ctx, &rbacv1.RoleBinding{
+			ObjectMeta: metav1.ObjectMeta{Name: "allow-pods-list"},
+			Subjects:   []rbacv1.Subject{{Kind: "User", Name: envTestUser.Name}},
+			RoleRef:    rbacv1.RoleRef{Kind: "Role", Name: r.Name},
+		}, metav1.CreateOptions{})
+		// Deny cluster by removing cluster rule
+		_ = client.RbacV1().ClusterRoles().Delete(c.ctx, "allow-all", metav1.DeleteOptions{})
+		toolResult, err := c.callTool("pods_list", map[string]interface{}{})
+		t.Run("pods_list returns pods list for default namespace only", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call tool failed %v", err)
+				return
+			}
+			if toolResult.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
+		})
+		var decoded []unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		t.Run("pods_list has yaml content", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("invalid tool result content %v", err)
+				return
+			}
+		})
+		t.Run("pods_list returns 1 items", func(t *testing.T) {
+			if len(decoded) != 1 {
+				t.Fatalf("invalid pods count, expected 1, got %v", len(decoded))
+				return
+			}
+		})
+		t.Run("pods_list returns pod in default", func(t *testing.T) {
+			if decoded[0].GetName() != "a-pod-in-default" {
+				t.Fatalf("invalid pod name, expected a-pod-in-default, got %v", decoded[0].GetName())
+				return
+			}
+			if decoded[0].GetNamespace() != "default" {
+				t.Fatalf("invalid pod namespace, expected default, got %v", decoded[0].GetNamespace())
 				return
 			}
 		})
@@ -181,6 +241,12 @@ func TestPodsGet(t *testing.T) {
 			}
 			if decodedNilNamespace.GetNamespace() != "default" {
 				t.Fatalf("invalid pod namespace, expected default, got %v", decodedNilNamespace.GetNamespace())
+				return
+			}
+		})
+		t.Run("pods_get with name and nil namespace omits managed fields", func(t *testing.T) {
+			if decodedNilNamespace.GetManagedFields() != nil {
+				t.Fatalf("managed fields should be omitted, got %v", decodedNilNamespace.GetManagedFields())
 				return
 			}
 		})
