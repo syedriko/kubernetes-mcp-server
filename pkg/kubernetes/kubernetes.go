@@ -2,6 +2,10 @@ package kubernetes
 
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
@@ -11,7 +15,10 @@ import (
 
 type Kubernetes struct {
 	cfg                         *rest.Config
+	clientSet                   *kubernetes.Clientset
+	discoveryClient             *discovery.DiscoveryClient
 	deferredDiscoveryRESTMapper *restmapper.DeferredDiscoveryRESTMapper
+	dynamicClient               *dynamic.DynamicClient
 }
 
 func NewKubernetes() (*Kubernetes, error) {
@@ -19,7 +26,25 @@ func NewKubernetes() (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Kubernetes{cfg: cfg}, nil
+	clientSet, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	dynamicClient, err := dynamic.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return &Kubernetes{
+		cfg:                         cfg,
+		clientSet:                   clientSet,
+		discoveryClient:             discoveryClient,
+		deferredDiscoveryRESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient)),
+		dynamicClient:               dynamicClient,
+	}, nil
 }
 
 func marshal(v any) (string, error) {
@@ -28,7 +53,13 @@ func marshal(v any) (string, error) {
 		for i := range t {
 			t[i].SetManagedFields(nil)
 		}
+	case []*unstructured.Unstructured:
+		for i := range t {
+			t[i].SetManagedFields(nil)
+		}
 	case unstructured.Unstructured:
+		t.SetManagedFields(nil)
+	case *unstructured.Unstructured:
 		t.SetManagedFields(nil)
 	}
 	ret, err := yaml.Marshal(v)

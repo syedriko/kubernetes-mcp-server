@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/mark3labs/mcp-go/mcp"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func (s *Sever) initResources() {
+func (s *Server) initResources() {
 	s.server.AddTool(mcp.NewTool(
 		"resources_list",
 		mcp.WithDescription("List Kubernetes resources in the current cluster by providing their apiVersion and kind and optionally the namespace"),
@@ -24,7 +23,7 @@ func (s *Sever) initResources() {
 		mcp.WithString("namespace",
 			mcp.Description("Optional Namespace to retrieve the namespaced resources from (ignored in case of cluster scoped resources). If not provided, will list resources from all namespaces"),
 		),
-	), resourcesList)
+	), s.resourcesList)
 	s.server.AddTool(mcp.NewTool(
 		"resources_get",
 		mcp.WithDescription("Get a Kubernetes resource in the current cluster by providing its apiVersion, kind, optionally the namespace, and its name"),
@@ -43,7 +42,7 @@ func (s *Sever) initResources() {
 			mcp.Description("Name of the resource"),
 			mcp.Required(),
 		),
-	), resourcesGet)
+	), s.resourcesGet)
 	s.server.AddTool(mcp.NewTool(
 		"resources_create_or_update",
 		mcp.WithDescription("Create or update a Kubernetes resource in the current cluster by providing a YAML or JSON representation of the resource"),
@@ -51,7 +50,7 @@ func (s *Sever) initResources() {
 			mcp.Description("A JSON or YAML containing a representation of the Kubernetes resource. Should include top-level fields such as apiVersion,kind,metadata, and spec"),
 			mcp.Required(),
 		),
-	), resourcesCreateOrUpdate)
+	), s.resourcesCreateOrUpdate)
 	s.server.AddTool(mcp.NewTool(
 		"resources_delete",
 		mcp.WithDescription("Delete a Kubernetes resource in the current cluster by providing its apiVersion, kind, optionally the namespace, and its name"),
@@ -70,14 +69,10 @@ func (s *Sever) initResources() {
 			mcp.Description("Name of the resource"),
 			mcp.Required(),
 		),
-	), resourcesDelete)
+	), s.resourcesDelete)
 }
 
-func resourcesList(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to list resources: %v", err)), nil
-	}
+func (s *Server) resourcesList(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := ctr.Params.Arguments["namespace"]
 	if namespace == nil {
 		namespace = ""
@@ -86,18 +81,14 @@ func resourcesList(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolR
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to list resources, %s", err)), nil
 	}
-	ret, err := k.ResourcesList(ctx, gvk, namespace.(string))
+	ret, err := s.k.ResourcesList(ctx, gvk, namespace.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to list resources: %v", err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func resourcesGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to get resource: %v", err)), nil
-	}
+func (s *Server) resourcesGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := ctr.Params.Arguments["namespace"]
 	if namespace == nil {
 		namespace = ""
@@ -110,34 +101,26 @@ func resourcesGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolRe
 	if name == nil {
 		return NewTextResult("", errors.New("failed to get resource, missing argument name")), nil
 	}
-	ret, err := k.ResourcesGet(ctx, gvk, namespace.(string), name.(string))
+	ret, err := s.k.ResourcesGet(ctx, gvk, namespace.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to get resource: %v", err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func resourcesCreateOrUpdate(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to create or update resources: %v", err)), nil
-	}
+func (s *Server) resourcesCreateOrUpdate(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	resource := ctr.Params.Arguments["resource"]
 	if resource == nil || resource == "" {
 		return NewTextResult("", errors.New("failed to create or update resources, missing argument resource")), nil
 	}
-	ret, err := k.ResourcesCreateOrUpdate(ctx, resource.(string))
+	ret, err := s.k.ResourcesCreateOrUpdate(ctx, resource.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to create or update resources: %v", err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func resourcesDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to delete resource: %v", err)), nil
-	}
+func (s *Server) resourcesDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	namespace := ctr.Params.Arguments["namespace"]
 	if namespace == nil {
 		namespace = ""
@@ -150,7 +133,7 @@ func resourcesDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToo
 	if name == nil {
 		return NewTextResult("", errors.New("failed to delete resource, missing argument name")), nil
 	}
-	err = k.ResourcesDelete(ctx, gvk, namespace.(string), name.(string))
+	err = s.k.ResourcesDelete(ctx, gvk, namespace.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to delete resource: %v", err)), nil
 	}

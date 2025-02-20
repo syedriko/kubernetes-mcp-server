@@ -7,7 +7,7 @@ import (
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func (s *Sever) initConfiguration() {
+func (s *Server) initConfiguration() {
 	s.server.AddTool(mcp.NewTool(
 		"configuration_view",
 		mcp.WithDescription("Get the current Kubernetes configuration content as a kubeconfig YAML"),

@@ -28,7 +28,11 @@ Kubernetes Model Context Protocol (MCP) server
 			fmt.Println(version.Version)
 			return
 		}
-		if err := mcp.NewSever().ServeStdio(); err != nil && !errors.Is(err, context.Canceled) {
+		mcpServer, err := mcp.NewSever()
+		if err != nil {
+			panic(err)
+		}
+		if err := mcpServer.ServeStdio(); err != nil && !errors.Is(err, context.Canceled) {
 			panic(err)
 		}
 	},

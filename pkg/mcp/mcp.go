@@ -1,17 +1,19 @@
 package mcp
 
 import (
+	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
-type Sever struct {
+type Server struct {
 	server *server.MCPServer
+	k      *kubernetes.Kubernetes
 }
 
-func NewSever() *Sever {
-	s := &Sever{
+func NewSever() (*Server, error) {
+	s := &Server{
 		server: server.NewMCPServer(
 			version.BinaryName,
 			version.Version,
@@ -20,13 +22,25 @@ func NewSever() *Sever {
 			server.WithLogging(),
 		),
 	}
+	if err := s.reloadKubernetesClient(); err != nil {
+		return nil, err
+	}
 	s.initConfiguration()
 	s.initPods()
 	s.initResources()
-	return s
+	return s, nil
 }
 
-func (s *Sever) ServeStdio() error {
+func (s *Server) reloadKubernetesClient() error {
+	k, err := kubernetes.NewKubernetes()
+	if err != nil {
+		return err
+	}
+	s.k = k
+	return nil
+}
+
+func (s *Server) ServeStdio() error {
 	return server.ServeStdio(s.server)
 }
 

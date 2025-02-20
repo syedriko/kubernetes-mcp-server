@@ -77,23 +77,29 @@ func TestMain(m *testing.M) {
 }
 
 type mcpContext struct {
-	ctx        context.Context
-	tempDir    string
-	testServer *httptest.Server
-	cancel     context.CancelFunc
-	mcpClient  *client.SSEMCPClient
+	ctx           context.Context
+	tempDir       string
+	cancel        context.CancelFunc
+	mcpServer     *Server
+	mcpHttpServer *httptest.Server
+	mcpClient     *client.SSEMCPClient
 }
 
 func (c *mcpContext) beforeEach(t *testing.T) {
 	var err error
 	c.ctx, c.cancel = context.WithCancel(context.Background())
 	c.tempDir = t.TempDir()
-	c.withKubeConfig(nil)
-	c.testServer = server.NewTestServer(NewSever().server)
-	if c.mcpClient, err = client.NewSSEMCPClient(c.testServer.URL + "/sse"); err != nil {
+	_ = os.Unsetenv("KUBECONFIG")
+	if c.mcpServer, err = NewSever(); err != nil {
 		t.Fatal(err)
 		return
 	}
+	c.mcpHttpServer = server.NewTestServer(c.mcpServer.server)
+	if c.mcpClient, err = client.NewSSEMCPClient(c.mcpHttpServer.URL + "/sse"); err != nil {
+		t.Fatal(err)
+		return
+	}
+	c.withKubeConfig(nil)
 	if err = c.mcpClient.Start(c.ctx); err != nil {
 		t.Fatal(err)
 		return
@@ -111,7 +117,7 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 func (c *mcpContext) afterEach() {
 	c.cancel()
 	_ = c.mcpClient.Close()
-	c.testServer.Close()
+	c.mcpHttpServer.Close()
 }
 
 func testCase(t *testing.T, test func(c *mcpContext)) {
@@ -140,6 +146,9 @@ func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 	kubeConfig := filepath.Join(c.tempDir, "config")
 	_ = clientcmd.WriteToFile(*fakeConfig, kubeConfig)
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
+	if err := c.mcpServer.reloadKubernetesClient(); err != nil {
+		panic(err)
+	}
 	return fakeConfig
 }
 
@@ -168,11 +177,9 @@ func (c *mcpContext) inOpenShift() func() {
           }`)
 }
 
-// newKubernetesClient creates a new Kubernetes client with the current kubeconfig
+// newKubernetesClient creates a new Kubernetes client with the envTest kubeconfig
 func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
-	c.withEnvTest()
-	cfg, _ := clientcmd.BuildConfigFromFlags("", clientcmd.NewDefaultPathOptions().GetDefaultFilename())
-	return kubernetes.NewForConfigOrDie(cfg)
+	return kubernetes.NewForConfigOrDie(envTestRestConfig)
 }
 
 // newApiExtensionsClient creates a new ApiExtensions client with the envTest kubeconfig

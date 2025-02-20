@@ -4,15 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
-func (s *Sever) initPods() {
+func (s *Server) initPods() {
 	s.server.AddTool(mcp.NewTool(
 		"pods_list",
 		mcp.WithDescription("List all the Kubernetes pods in the current cluster from all namespaces"),
-	), podsListInAllNamespaces)
+	), s.podsListInAllNamespaces)
 	s.server.AddTool(mcp.NewTool(
 		"pods_list_in_namespace",
 		mcp.WithDescription("List all the Kubernetes pods in the specified namespace in the current cluster"),
@@ -20,7 +19,7 @@ func (s *Sever) initPods() {
 			mcp.Description("Namespace to list pods from"),
 			mcp.Required(),
 		),
-	), podsListInNamespace)
+	), s.podsListInNamespace)
 	s.server.AddTool(mcp.NewTool(
 		"pods_get",
 		mcp.WithDescription("Get a Kubernetes Pod in the current or provided namespace with the provided name"),
@@ -31,7 +30,7 @@ func (s *Sever) initPods() {
 			mcp.Description("Name of the Pod"),
 			mcp.Required(),
 		),
-	), podsGet)
+	), s.podsGet)
 	s.server.AddTool(mcp.NewTool(
 		"pods_delete",
 		mcp.WithDescription("Delete a Kubernetes Pod in the current or provided namespace with the provided name"),
@@ -42,7 +41,7 @@ func (s *Sever) initPods() {
 			mcp.Description("Name of the Pod to delete"),
 			mcp.Required(),
 		),
-	), podsDelete)
+	), s.podsDelete)
 	s.server.AddTool(mcp.NewTool(
 		"pods_log",
 		mcp.WithDescription("Get the logs of a Kubernetes Pod in the current or provided namespace with the provided name"),
@@ -53,7 +52,7 @@ func (s *Sever) initPods() {
 			mcp.Description("Name of the Pod to get the logs from"),
 			mcp.Required(),
 		),
-	), podsLog)
+	), s.podsLog)
 	s.server.AddTool(mcp.NewTool(
 		"pods_run",
 		mcp.WithDescription("Run a Kubernetes Pod in the current or provided namespace with the provided container image and optional name"),
@@ -70,42 +69,30 @@ func (s *Sever) initPods() {
 		mcp.WithNumber("port",
 			mcp.Description("TCP/IP port to expose from the Pod container (Optional, no port exposed if not provided)"),
 		),
-	), podsRun)
+	), s.podsRun)
 }
 
-func podsListInAllNamespaces(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to list pods in all namespaces: %v", err)), nil
-	}
-	ret, err := k.PodsListInAllNamespaces(ctx)
+func (s *Server) podsListInAllNamespaces(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	ret, err := s.k.PodsListInAllNamespaces(ctx)
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to list pods in all namespaces: %v", err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func podsListInNamespace(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to list pods in namespace: %v", err)), nil
-	}
+func (s *Server) podsListInNamespace(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ns := ctr.Params.Arguments["namespace"]
 	if ns == nil {
 		return NewTextResult("", errors.New("failed to list pods in namespace, missing argument namespace")), nil
 	}
-	ret, err := k.PodsListInNamespace(ctx, ns.(string))
+	ret, err := s.k.PodsListInNamespace(ctx, ns.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to list pods in namespace %s: %v", ns, err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func podsGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to get pod: %v", err)), nil
-	}
+func (s *Server) podsGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ns := ctr.Params.Arguments["namespace"]
 	if ns == nil {
 		ns = ""
@@ -114,18 +101,14 @@ func podsGet(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult,
 	if name == nil {
 		return NewTextResult("", errors.New("failed to get pod, missing argument name")), nil
 	}
-	ret, err := k.PodsGet(ctx, ns.(string), name.(string))
+	ret, err := s.k.PodsGet(ctx, ns.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to get pod %s in namespace %s: %v", name, ns, err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func podsDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to delete pod: %v", err)), nil
-	}
+func (s *Server) podsDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ns := ctr.Params.Arguments["namespace"]
 	if ns == nil {
 		ns = ""
@@ -134,18 +117,14 @@ func podsDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResu
 	if name == nil {
 		return NewTextResult("", errors.New("failed to delete pod, missing argument name")), nil
 	}
-	ret, err := k.PodsDelete(ctx, ns.(string), name.(string))
+	ret, err := s.k.PodsDelete(ctx, ns.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to delete pod %s in namespace %s: %v", name, ns, err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func podsLog(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to get pod log: %v", err)), nil
-	}
+func (s *Server) podsLog(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ns := ctr.Params.Arguments["namespace"]
 	if ns == nil {
 		ns = ""
@@ -154,18 +133,14 @@ func podsLog(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult,
 	if name == nil {
 		return NewTextResult("", errors.New("failed to get pod log, missing argument name")), nil
 	}
-	ret, err := k.PodsLog(ctx, ns.(string), name.(string))
+	ret, err := s.k.PodsLog(ctx, ns.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to get pod %s log in namespace %s: %v", name, ns, err)), nil
 	}
 	return NewTextResult(ret, err), nil
 }
 
-func podsRun(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	k, err := kubernetes.NewKubernetes()
-	if err != nil {
-		return NewTextResult("", fmt.Errorf("failed to run pod: %v", err)), nil
-	}
+func (s *Server) podsRun(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ns := ctr.Params.Arguments["namespace"]
 	if ns == nil {
 		ns = ""
@@ -182,7 +157,7 @@ func podsRun(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult,
 	if port == nil {
 		port = float64(0)
 	}
-	ret, err := k.PodsRun(ctx, ns.(string), name.(string), image.(string), int32(port.(float64)))
+	ret, err := s.k.PodsRun(ctx, ns.(string), name.(string), image.(string), int32(port.(float64)))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to get pod %s log in namespace %s: %v", name, ns, err)), nil
 	}

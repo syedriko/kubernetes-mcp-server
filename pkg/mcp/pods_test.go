@@ -20,6 +20,10 @@ func TestPodsListInAllNamespaces(t *testing.T) {
 				t.Fatalf("call tool failed %v", err)
 				return
 			}
+			if toolResult.IsError {
+				t.Fatalf("call tool failed")
+				return
+			}
 		})
 		var decoded []unstructured.Unstructured
 		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
