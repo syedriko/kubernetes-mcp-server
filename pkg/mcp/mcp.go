@@ -5,6 +5,7 @@ import (
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"slices"
 )
 
 type Server struct {
@@ -25,9 +26,11 @@ func NewSever() (*Server, error) {
 	if err := s.reloadKubernetesClient(); err != nil {
 		return nil, err
 	}
-	s.initConfiguration()
-	s.initPods()
-	s.initResources()
+	s.server.AddTools(slices.Concat(
+		s.initConfiguration(),
+		s.initPods(),
+		s.initResources(),
+	)...)
 	return s, nil
 }
 
