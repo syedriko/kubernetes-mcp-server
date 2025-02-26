@@ -6,6 +6,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/yaml"
+	"strings"
 	"testing"
 )
 
@@ -204,7 +205,31 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 				return
 			}
 			if resourcesCreateOrUpdateCm1.IsError {
-				t.Fatalf("call tool failed")
+				t.Errorf("call tool failed")
+				return
+			}
+		})
+		var decodedCreateOrUpdateCm1 []unstructured.Unstructured
+		err = yaml.Unmarshal([]byte(resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string)), &decodedCreateOrUpdateCm1)
+		t.Run("resources_create_or_update with valid namespaced yaml resource returns yaml content", func(t *testing.T) {
+			if err != nil {
+				t.Errorf("invalid tool result content %v", err)
+				return
+			}
+			if !strings.HasPrefix(resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string), "# The following resources (YAML) have been created or updated successfully") {
+				t.Errorf("Excpected success message, got %v", resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string))
+				return
+			}
+			if len(decodedCreateOrUpdateCm1) != 1 {
+				t.Errorf("invalid resource count, expected 1, got %v", len(decodedCreateOrUpdateCm1))
+				return
+			}
+			if decodedCreateOrUpdateCm1[0].GetName() != "a-cm-created-or-updated" {
+				t.Errorf("invalid resource name, expected a-cm-created-or-updated, got %v", decodedCreateOrUpdateCm1[0].GetName())
+				return
+			}
+			if decodedCreateOrUpdateCm1[0].GetUID() == "" {
+				t.Errorf("invalid uid, got %v", decodedCreateOrUpdateCm1[0].GetUID())
 				return
 			}
 		})

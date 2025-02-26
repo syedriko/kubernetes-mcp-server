@@ -101,7 +101,11 @@ func (k *Kubernetes) resourcesCreateOrUpdate(ctx context.Context, resources []*u
 			k.deferredDiscoveryRESTMapper.Reset()
 		}
 	}
-	return marshal(resources)
+	yaml, err := marshal(resources)
+	if err != nil {
+		return "", err
+	}
+	return "# The following resources (YAML) have been created or updated successfully\n" + yaml, nil
 }
 
 func (k *Kubernetes) resourceFor(gvk *schema.GroupVersionKind) (*schema.GroupVersionResource, error) {
