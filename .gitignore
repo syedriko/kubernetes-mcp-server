@@ -2,6 +2,7 @@
 
 .npmrc
 kubernetes-mcp-server
+!cmd/kubernetes-mcp-server
 npm/kubernetes-mcp-server/README.md
 npm/kubernetes-mcp-server/LICENSE
 !npm/kubernetes-mcp-server
