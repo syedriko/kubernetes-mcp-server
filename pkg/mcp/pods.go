@@ -106,6 +106,8 @@ func (s *Server) podsLog(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.Cal
 	ret, err := s.k.PodsLog(ctx, ns.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to get pod %s log in namespace %s: %v", name, ns, err)), nil
+	} else if ret == "" {
+		ret = fmt.Sprintf("The pod %s in namespace %s has not logged any message yet", name, ns)
 	}
 	return NewTextResult(ret, err), nil
 }

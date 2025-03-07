@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/mark3labs/mcp-go/mcp"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,7 @@ func TestPodsListInAllNamespaces(t *testing.T) {
 			}
 		})
 		var decoded []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(mcp.TextContent).Text), &decoded)
 		t.Run("pods_list has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -102,7 +103,7 @@ func TestPodsListInAllNamespacesUnauthorized(t *testing.T) {
 			}
 		})
 		var decoded []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(mcp.TextContent).Text), &decoded)
 		t.Run("pods_list has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -137,8 +138,8 @@ func TestPodsListInNamespace(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list pods in namespace, missing argument namespace" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to list pods in namespace, missing argument namespace" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -156,7 +157,7 @@ func TestPodsListInNamespace(t *testing.T) {
 			}
 		})
 		var decoded []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(mcp.TextContent).Text), &decoded)
 		t.Run("pods_list_in_namespace has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -197,8 +198,8 @@ func TestPodsGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod, missing argument name" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get pod, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -208,8 +209,8 @@ func TestPodsGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod not-found in namespace : pods \"not-found\" not found" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get pod not-found in namespace : pods \"not-found\" not found" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -227,7 +228,7 @@ func TestPodsGet(t *testing.T) {
 			}
 		})
 		var decodedNilNamespace unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(podsGetNilNamespace.Content[0].(map[string]interface{})["text"].(string)), &decodedNilNamespace)
+		err = yaml.Unmarshal([]byte(podsGetNilNamespace.Content[0].(mcp.TextContent).Text), &decodedNilNamespace)
 		t.Run("pods_get with name and nil namespace has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -265,7 +266,7 @@ func TestPodsGet(t *testing.T) {
 			}
 		})
 		var decodedInNamespace unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(podsGetInNamespace.Content[0].(map[string]interface{})["text"].(string)), &decodedInNamespace)
+		err = yaml.Unmarshal([]byte(podsGetInNamespace.Content[0].(mcp.TextContent).Text), &decodedInNamespace)
 		t.Run("pods_get with name and namespace has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -295,8 +296,8 @@ func TestPodsDelete(t *testing.T) {
 				t.Errorf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete pod, missing argument name" {
-				t.Errorf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete pod, missing argument name" {
+				t.Errorf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -306,8 +307,8 @@ func TestPodsDelete(t *testing.T) {
 				t.Errorf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete pod not-found in namespace : pods \"not-found\" not found" {
-				t.Errorf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete pod not-found in namespace : pods \"not-found\" not found" {
+				t.Errorf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -329,8 +330,8 @@ func TestPodsDelete(t *testing.T) {
 				t.Errorf("call tool failed")
 				return
 			}
-			if podsDeleteNilNamespace.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
-				t.Errorf("invalid tool result content, got %v", podsDeleteNilNamespace.Content[0].(map[string]interface{})["text"].(string))
+			if podsDeleteNilNamespace.Content[0].(mcp.TextContent).Text != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteNilNamespace.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -359,8 +360,8 @@ func TestPodsDelete(t *testing.T) {
 				t.Errorf("call tool failed")
 				return
 			}
-			if podsDeleteInNamespace.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
-				t.Errorf("invalid tool result content, got %v", podsDeleteInNamespace.Content[0].(map[string]interface{})["text"].(string))
+			if podsDeleteInNamespace.Content[0].(mcp.TextContent).Text != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteInNamespace.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -396,8 +397,8 @@ func TestPodsDelete(t *testing.T) {
 				t.Errorf("call tool failed")
 				return
 			}
-			if podsDeleteManaged.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
-				t.Errorf("invalid tool result content, got %v", podsDeleteManaged.Content[0].(map[string]interface{})["text"].(string))
+			if podsDeleteManaged.Content[0].(mcp.TextContent).Text != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteManaged.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -451,8 +452,8 @@ func TestPodsDeleteInOpenShift(t *testing.T) {
 				t.Errorf("call tool failed")
 				return
 			}
-			if podsDeleteManagedOpenShift.Content[0].(map[string]interface{})["text"].(string) != "Pod deleted successfully" {
-				t.Errorf("invalid tool result content, got %v", podsDeleteManagedOpenShift.Content[0].(map[string]interface{})["text"].(string))
+			if podsDeleteManagedOpenShift.Content[0].(mcp.TextContent).Text != "Pod deleted successfully" {
+				t.Errorf("invalid tool result content, got %v", podsDeleteManagedOpenShift.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -482,8 +483,8 @@ func TestPodsLog(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod log, missing argument name" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get pod log, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -493,8 +494,8 @@ func TestPodsLog(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get pod not-found log in namespace : pods \"not-found\" not found" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get pod not-found log in namespace : pods \"not-found\" not found" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -537,8 +538,8 @@ func TestPodsRun(t *testing.T) {
 				t.Errorf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to run pod, missing argument image" {
-				t.Errorf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to run pod, missing argument image" {
+				t.Errorf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -554,7 +555,7 @@ func TestPodsRun(t *testing.T) {
 			}
 		})
 		var decodedNilNamespace []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(podsRunNilNamespace.Content[0].(map[string]interface{})["text"].(string)), &decodedNilNamespace)
+		err = yaml.Unmarshal([]byte(podsRunNilNamespace.Content[0].(mcp.TextContent).Text), &decodedNilNamespace)
 		t.Run("pods_run with image and nil namespace has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Errorf("invalid tool result content %v", err)
@@ -622,7 +623,7 @@ func TestPodsRun(t *testing.T) {
 			}
 		})
 		var decodedNamespaceAndPort []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(podsRunNamespaceAndPort.Content[0].(map[string]interface{})["text"].(string)), &decodedNamespaceAndPort)
+		err = yaml.Unmarshal([]byte(podsRunNamespaceAndPort.Content[0].(mcp.TextContent).Text), &decodedNamespaceAndPort)
 		t.Run("pods_run with image, namespace, and port has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Errorf("invalid tool result content %v", err)
@@ -692,7 +693,7 @@ func TestPodsRunInOpenShift(t *testing.T) {
 				return
 			}
 			var decodedPodServiceRoute []unstructured.Unstructured
-			err = yaml.Unmarshal([]byte(podsRunInOpenShift.Content[0].(map[string]interface{})["text"].(string)), &decodedPodServiceRoute)
+			err = yaml.Unmarshal([]byte(podsRunInOpenShift.Content[0].(mcp.TextContent).Text), &decodedPodServiceRoute)
 			if err != nil {
 				t.Errorf("invalid tool result content %v", err)
 				return

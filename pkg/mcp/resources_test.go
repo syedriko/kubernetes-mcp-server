@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/mark3labs/mcp-go/mcp"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -19,8 +20,8 @@ func TestResourcesList(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, missing argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to list resources, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -30,8 +31,8 @@ func TestResourcesList(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, missing argument kind" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to list resources, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -41,8 +42,8 @@ func TestResourcesList(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to list resources, invalid argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to list resources, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -52,8 +53,8 @@ func TestResourcesList(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to list resources: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != `failed to list resources: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -69,7 +70,7 @@ func TestResourcesList(t *testing.T) {
 			}
 		})
 		var decodedNamespaces []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(namespaces.Content[0].(map[string]interface{})["text"].(string)), &decodedNamespaces)
+		err = yaml.Unmarshal([]byte(namespaces.Content[0].(mcp.TextContent).Text), &decodedNamespaces)
 		t.Run("resources_list has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -94,8 +95,8 @@ func TestResourcesGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get resource, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -105,8 +106,8 @@ func TestResourcesGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument kind" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get resource, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -116,8 +117,8 @@ func TestResourcesGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, invalid argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get resource, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -127,8 +128,8 @@ func TestResourcesGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to get resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != `failed to get resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -138,8 +139,8 @@ func TestResourcesGet(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to get resource, missing argument name" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to get resource, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -155,7 +156,7 @@ func TestResourcesGet(t *testing.T) {
 			}
 		})
 		var decodedNamespace unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(namespace.Content[0].(map[string]interface{})["text"].(string)), &decodedNamespace)
+		err = yaml.Unmarshal([]byte(namespace.Content[0].(mcp.TextContent).Text), &decodedNamespace)
 		t.Run("resources_get has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
@@ -180,8 +181,8 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to create or update resources, missing argument resource" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to create or update resources, missing argument resource" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -191,8 +192,8 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to create or update resources, missing argument resource" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to create or update resources, missing argument resource" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -210,14 +211,14 @@ func TestResourcesCreateOrUpdate(t *testing.T) {
 			}
 		})
 		var decodedCreateOrUpdateCm1 []unstructured.Unstructured
-		err = yaml.Unmarshal([]byte(resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string)), &decodedCreateOrUpdateCm1)
+		err = yaml.Unmarshal([]byte(resourcesCreateOrUpdateCm1.Content[0].(mcp.TextContent).Text), &decodedCreateOrUpdateCm1)
 		t.Run("resources_create_or_update with valid namespaced yaml resource returns yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Errorf("invalid tool result content %v", err)
 				return
 			}
-			if !strings.HasPrefix(resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string), "# The following resources (YAML) have been created or updated successfully") {
-				t.Errorf("Excpected success message, got %v", resourcesCreateOrUpdateCm1.Content[0].(map[string]interface{})["text"].(string))
+			if !strings.HasPrefix(resourcesCreateOrUpdateCm1.Content[0].(mcp.TextContent).Text, "# The following resources (YAML) have been created or updated successfully") {
+				t.Errorf("Excpected success message, got %v", resourcesCreateOrUpdateCm1.Content[0].(mcp.TextContent).Text)
 				return
 			}
 			if len(decodedCreateOrUpdateCm1) != 1 {
@@ -357,8 +358,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete resource, missing argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -368,8 +369,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument kind" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete resource, missing argument kind" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -379,8 +380,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, invalid argument apiVersion" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete resource, invalid argument apiVersion" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -390,8 +391,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != `failed to delete resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != `failed to delete resource: no matches for kind "Custom" in version "custom.non.existent.example.com/v1"` {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -401,8 +402,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool should fail")
 				return
 			}
-			if toolResult.Content[0].(map[string]interface{})["text"].(string) != "failed to delete resource, missing argument name" {
-				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(map[string]interface{})["text"].(string))
+			if toolResult.Content[0].(mcp.TextContent).Text != "failed to delete resource, missing argument name" {
+				t.Fatalf("invalid error message, got %v", toolResult.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -416,8 +417,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool failed")
 				return
 			}
-			if resourcesDeleteCm.Content[0].(map[string]interface{})["text"].(string) != "Resource deleted successfully" {
-				t.Fatalf("invalid tool result content got: %v", resourcesDeleteCm.Content[0].(map[string]interface{})["text"].(string))
+			if resourcesDeleteCm.Content[0].(mcp.TextContent).Text != "Resource deleted successfully" {
+				t.Fatalf("invalid tool result content got: %v", resourcesDeleteCm.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})
@@ -439,8 +440,8 @@ func TestResourcesDelete(t *testing.T) {
 				t.Fatalf("call tool failed")
 				return
 			}
-			if resourcesDeleteNamespace.Content[0].(map[string]interface{})["text"].(string) != "Resource deleted successfully" {
-				t.Fatalf("invalid tool result content got: %v", resourcesDeleteNamespace.Content[0].(map[string]interface{})["text"].(string))
+			if resourcesDeleteNamespace.Content[0].(mcp.TextContent).Text != "Resource deleted successfully" {
+				t.Fatalf("invalid tool result content got: %v", resourcesDeleteNamespace.Content[0].(mcp.TextContent).Text)
 				return
 			}
 		})

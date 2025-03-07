@@ -13,9 +13,12 @@ import (
 	apiextensionsv1spec "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/scale"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	toolswatch "k8s.io/client-go/tools/watch"
@@ -191,6 +194,18 @@ func (c *mcpContext) inOpenShift() func() {
 // newKubernetesClient creates a new Kubernetes client with the envTest kubeconfig
 func (c *mcpContext) newKubernetesClient() *kubernetes.Clientset {
 	return kubernetes.NewForConfigOrDie(envTestRestConfig)
+}
+
+func (c *mcpContext) newRestClient(groupVersion *schema.GroupVersion) *rest.RESTClient {
+	config := *envTestRestConfig
+	config.GroupVersion = groupVersion
+	config.APIPath = "/api"
+	config.NegotiatedSerializer = serializer.NewCodecFactory(scale.NewScaleConverter().Scheme()).WithoutConversion()
+	rc, err := rest.RESTClientFor(&config)
+	if err != nil {
+		panic(err)
+	}
+	return rc
 }
 
 // newApiExtensionsClient creates a new ApiExtensions client with the envTest kubeconfig

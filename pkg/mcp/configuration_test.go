@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/mark3labs/mcp-go/mcp"
 	v1 "k8s.io/client-go/tools/clientcmd/api/v1"
 	"sigs.k8s.io/yaml"
 	"testing"
@@ -16,7 +17,7 @@ func TestConfigurationView(t *testing.T) {
 			}
 		})
 		var decoded *v1.Config
-		err = yaml.Unmarshal([]byte(toolResult.Content[0].(map[string]interface{})["text"].(string)), &decoded)
+		err = yaml.Unmarshal([]byte(toolResult.Content[0].(mcp.TextContent).Text), &decoded)
 		t.Run("configuration_view has yaml content", func(t *testing.T) {
 			if err != nil {
 				t.Fatalf("invalid tool result content %v", err)
