@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/mark3labs/mcp-go/mcp"
+	"strings"
 	"testing"
 )
 
@@ -40,4 +41,29 @@ func TestTools(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestToolsInOpenShift(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
+		c.mcpServer.server.AddTools(c.mcpServer.initResources()...)
+		tools, err := c.mcpClient.ListTools(c.ctx, mcp.ListToolsRequest{})
+		t.Run("ListTools returns tools", func(t *testing.T) {
+			if err != nil {
+				t.Fatalf("call ListTools failed %v", err)
+				return
+			}
+		})
+		t.Run("ListTools has resources_list tool with OpenShift hint", func(t *testing.T) {
+			if tools.Tools[10].Name != "resources_list" {
+				t.Fatalf("tool resources_list not found")
+				return
+			}
+			if !strings.Contains(tools.Tools[10].Description, ", route.openshift.io/v1 Route") {
+				t.Fatalf("tool resources_list does not have OpenShift hint, got %s", tools.Tools[9].Description)
+				return
+			}
+		})
+	})
+
 }

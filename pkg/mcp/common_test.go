@@ -174,21 +174,29 @@ func (c *mcpContext) withEnvTest() {
 // inOpenShift sets up the kubernetes environment to seem to be running OpenShift
 func (c *mcpContext) inOpenShift() func() {
 	c.withKubeConfig(envTestRestConfig)
-	return c.crdApply(`
+	crdTemplate := `
           {
             "apiVersion": "apiextensions.k8s.io/v1",
             "kind": "CustomResourceDefinition",
-            "metadata": {"name": "routes.route.openshift.io"},
+            "metadata": {"name": "%s"},
             "spec": {
-              "group": "route.openshift.io",
+              "group": "%s",
               "versions": [{
                 "name": "v1","served": true,"storage": true,
                 "schema": {"openAPIV3Schema": {"type": "object","x-kubernetes-preserve-unknown-fields": true}}
               }],
               "scope": "Namespaced",
-              "names": {"plural": "routes","singular": "route","kind": "Route"}
+              "names": {"plural": "%s","singular": "%s","kind": "%s"}
             }
-          }`)
+          }`
+	removeProjects := c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
+		"projects", "project", "Project"))
+	removeRoutes := c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
+		"routes", "route", "Route"))
+	return func() {
+		removeProjects()
+		removeRoutes()
+	}
 }
 
 // newKubernetesClient creates a new Kubernetes client with the envTest kubeconfig
@@ -224,7 +232,7 @@ func (c *mcpContext) crdApply(resource string) func() {
 	}
 	c.crdWaitUntilReady(crd.Name)
 	return func() {
-		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, "routes.route.openshift.io", metav1.DeleteOptions{})
+		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, crd.Name, metav1.DeleteOptions{})
 		if err != nil {
 			panic(fmt.Errorf("failed to delete CRD %v", err))
 		}
