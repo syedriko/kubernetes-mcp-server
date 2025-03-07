@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/tools/clientcmd/api"
 	toolswatch "k8s.io/client-go/tools/watch"
+	"k8s.io/utils/ptr"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
@@ -232,7 +233,9 @@ func (c *mcpContext) crdApply(resource string) func() {
 	}
 	c.crdWaitUntilReady(crd.Name)
 	return func() {
-		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, crd.Name, metav1.DeleteOptions{})
+		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, crd.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: ptr.To(int64(0)),
+		})
 		if err != nil {
 			panic(fmt.Errorf("failed to delete CRD %v", err))
 		}
