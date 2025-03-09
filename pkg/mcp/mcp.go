@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"fmt"
 	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -46,6 +47,10 @@ func (s *Server) reloadKubernetesClient() error {
 
 func (s *Server) ServeStdio() error {
 	return server.ServeStdio(s.server)
+}
+
+func (s *Server) ServeSse(publicHost string, port int) *server.SSEServer {
+	return server.NewSSEServer(s.server, fmt.Sprintf("http://%s:%d", publicHost, port))
 }
 
 func NewTextResult(content string, err error) *mcp.CallToolResult {
