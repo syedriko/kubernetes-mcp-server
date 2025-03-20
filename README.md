@@ -5,13 +5,13 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver)](https://github.com/manusa/kubernetes-mcp-server/releases/latest)
 [![Build](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg)](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml)
 
-[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos)
+[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos) | [⚙️ Configuration](#configuration)
 
 https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
 ## ✨ Features <a id="features"></a>
 
-A powerful and flexible Kubernetes MCP server implementation with support for OpenShift.
+A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.marcnuri.com/model-context-protocol-mcp-introduction) server implementation with support for OpenShift.
 
 - **✅ Configuration**: View and manage the [Kubernetes `.kube/config`](https://blog.marcnuri.com/where-is-my-default-kubeconfig-file).
   - **View** the current configuration.
@@ -31,7 +31,6 @@ A powerful and flexible Kubernetes MCP server implementation with support for Op
 #### Using npx
 
 If you have npm installed, this is the fastest way to get started with `kubernetes-mcp-server` on Claude Desktop.
-
 
 Open your `claude_desktop_config.json` and add the mcp server to the list of `mcpServers`:
 ``` json
@@ -75,3 +74,24 @@ Demo showcasing how Kubernetes MCP server is leveraged by Claude Desktop to auto
 
 https://github.com/user-attachments/assets/a576176d-a142-4c19-b9aa-a83dc4b8d941
 
+## ⚙️ Configuration <a id="configuration"></a>
+
+The Kubernetes MCP server can be configured using command line (CLI) arguments.
+
+You can run the CLI executable either by using `npx` or by downloading the [latest release binary](https://github.com/manusa/kubernetes-mcp-server/releases/latest).
+
+```shell
+# Run the Kubernetes MCP server using npx (in case you have npm installed)
+npx kubernetes-mcp-server@latest --help
+```
+
+```shell
+# Run the Kubernetes MCP server using the latest release binary
+./kubernetes-mcp-server --help
+```
+
+### Configuration Options
+
+| Option       | Description                                                                              |
+|--------------|------------------------------------------------------------------------------------------|
+| `--sse-port` | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port. |
