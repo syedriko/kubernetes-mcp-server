@@ -29,8 +29,8 @@ Kubernetes Model Context Protocol (MCP) server
   # start a SSE server on port 8080
   kubernetes-mcp-server --sse-port 8080
 
-  # start a SSE server on port 8080 with a public host of example.com
-  kubernetes-mcp-server --sse-port 8080 --sse-public-host example.com
+  # start a SSE server on port 8443 with a public HTTPS host of example.com
+  kubernetes-mcp-server --sse-port 8443 --sse-base-url https://example.com:8443
 
   # TODO: add more examples`,
 	Run: func(cmd *cobra.Command, args []string) {
