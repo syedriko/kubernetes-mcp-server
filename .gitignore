@@ -1,4 +1,6 @@
 .idea/
+.docusaurus/
+node_modules/
 
 .npmrc
 kubernetes-mcp-server
