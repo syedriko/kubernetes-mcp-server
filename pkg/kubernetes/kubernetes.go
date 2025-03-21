@@ -13,6 +13,10 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+// InClusterConfig is a variable that holds the function to get the in-cluster config
+// Exposed for testing
+var InClusterConfig = rest.InClusterConfig
+
 type Kubernetes struct {
 	cfg                         *rest.Config
 	clientSet                   *kubernetes.Clientset
@@ -71,24 +75,13 @@ func marshal(v any) (string, error) {
 
 func resolveConfig() clientcmd.ClientConfig {
 	pathOptions := clientcmd.NewDefaultPathOptions()
-	//cfg, err := pathOptions.GetStartingConfig()
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if err = clientcmdapi.MinifyConfig(cfg); err != nil {
-	//	return nil, err
-	//}
-	//if err = clientcmdapi.FlattenConfig(cfg); err != nil {
-	//	return nil, err
-	//}
-	//return cfg, nil
 	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: pathOptions.GetDefaultFilename()},
 		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
 }
 
 func resolveClientConfig() (*rest.Config, error) {
-	inClusterConfig, err := rest.InClusterConfig()
+	inClusterConfig, err := InClusterConfig()
 	if err == nil && inClusterConfig != nil {
 		return inClusterConfig, nil
 	}

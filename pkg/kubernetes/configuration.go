@@ -6,9 +6,24 @@ import (
 )
 
 func ConfigurationView() (string, error) {
-	// TODO: consider in cluster run mode (current approach only shows kubeconfig)
-	cfg, err := resolveConfig().RawConfig()
-	if err != nil {
+	var cfg clientcmdapi.Config
+	var err error
+	inClusterConfig, err := InClusterConfig()
+	if err == nil && inClusterConfig != nil {
+		cfg = *clientcmdapi.NewConfig()
+		cfg.Clusters["cluster"] = &clientcmdapi.Cluster{
+			Server:                inClusterConfig.Host,
+			InsecureSkipTLSVerify: inClusterConfig.Insecure,
+		}
+		cfg.AuthInfos["user"] = &clientcmdapi.AuthInfo{
+			Token: inClusterConfig.BearerToken,
+		}
+		cfg.Contexts["context"] = &clientcmdapi.Context{
+			Cluster:  "cluster",
+			AuthInfo: "user",
+		}
+		cfg.CurrentContext = "context"
+	} else if cfg, err = resolveConfig().RawConfig(); err != nil {
 		return "", err
 	}
 	if err = clientcmdapi.MinifyConfig(&cfg); err != nil {

@@ -19,7 +19,7 @@ func (s *Server) initConfiguration() []server.ServerTool {
 func configurationView(_ context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	ret, err := kubernetes.ConfigurationView()
 	if err != nil {
-		err = fmt.Errorf("failed to get configuration view: %v", err)
+		err = fmt.Errorf("failed to get configuration: %v", err)
 	}
 	return NewTextResult(ret, err), nil
 }
