@@ -5,7 +5,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver)](https://github.com/manusa/kubernetes-mcp-server/releases/latest)
 [![Build](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg)](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml)
 
-[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos) | [⚙️ Configuration](#configuration)
+[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos) | [⚙️ Configuration](#configuration) | [🧑‍💻 Development](#development)
 
 https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
@@ -23,6 +23,7 @@ A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.m
   - **Delete** a pod by name from the specified namespace.
   - **Show logs** for a pod by name from the specified namespace.
   - **Run** a container image in a pod and optionally expose it.
+- **✅ Events**: View Kubernetes events in all namespaces or in a specific namespace.
 
 ## 🚀 Getting Started <a id="getting-started"></a>
 
@@ -95,3 +96,16 @@ npx kubernetes-mcp-server@latest --help
 | Option       | Description                                                                              |
 |--------------|------------------------------------------------------------------------------------------|
 | `--sse-port` | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port. |
+
+## 🧑‍💻 Development <a id="development"></a>
+
+### Running with mcp-inspector
+
+Compile the project and run the Kubernetes MCP server with [mcp-inspector](https://modelcontextprotocol.io/docs/tools/inspector) to inspect the MCP server.
+
+```shell
+# Compile the project
+make build
+# Run the Kubernetes MCP server with mcp-inspector
+npx @modelcontextprotocol/inspector@latest $(pwd)/kubernetes-mcp-server
+```

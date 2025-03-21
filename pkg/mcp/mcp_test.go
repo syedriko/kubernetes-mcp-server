@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"github.com/mark3labs/mcp-go/mcp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -9,6 +10,7 @@ import (
 func TestTools(t *testing.T) {
 	expectedNames := []string{
 		"configuration_view",
+		"events_list",
 		"pods_list",
 		"pods_list_in_namespace",
 		"pods_get",
@@ -55,11 +57,14 @@ func TestToolsInOpenShift(t *testing.T) {
 			}
 		})
 		t.Run("ListTools has resources_list tool with OpenShift hint", func(t *testing.T) {
-			if tools.Tools[10].Name != "resources_list" {
+			idx := slices.IndexFunc(tools.Tools, func(tool mcp.Tool) bool {
+				return tool.Name == "resources_list"
+			})
+			if idx == -1 {
 				t.Fatalf("tool resources_list not found")
 				return
 			}
-			if !strings.Contains(tools.Tools[10].Description, ", route.openshift.io/v1 Route") {
+			if !strings.Contains(tools.Tools[idx].Description, ", route.openshift.io/v1 Route") {
 				t.Fatalf("tool resources_list does not have OpenShift hint, got %s", tools.Tools[9].Description)
 				return
 			}

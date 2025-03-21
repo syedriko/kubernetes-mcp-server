@@ -29,6 +29,7 @@ func NewSever() (*Server, error) {
 	}
 	s.server.AddTools(slices.Concat(
 		s.initConfiguration(),
+		s.initEvents(),
 		s.initPods(),
 		s.initResources(),
 	)...)

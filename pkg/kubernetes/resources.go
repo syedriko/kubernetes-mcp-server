@@ -20,16 +20,7 @@ const (
 )
 
 func (k *Kubernetes) ResourcesList(ctx context.Context, gvk *schema.GroupVersionKind, namespace string) (string, error) {
-	gvr, err := k.resourceFor(gvk)
-	if err != nil {
-		return "", err
-	}
-	// Check if operation is allowed for all namespaces (applicable for namespaced resources)
-	isNamespaced, _ := k.isNamespaced(gvk)
-	if isNamespaced && !k.canIUse(ctx, gvr, namespace, "list") && namespace == "" {
-		namespace = configuredNamespace()
-	}
-	rl, err := k.dynamicClient.Resource(*gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+	rl, err := k.resourcesList(ctx, gvk, namespace)
 	if err != nil {
 		return "", err
 	}
@@ -78,6 +69,19 @@ func (k *Kubernetes) ResourcesDelete(ctx context.Context, gvk *schema.GroupVersi
 	return k.dynamicClient.Resource(*gvr).Namespace(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
+func (k *Kubernetes) resourcesList(ctx context.Context, gvk *schema.GroupVersionKind, namespace string) (*unstructured.UnstructuredList, error) {
+	gvr, err := k.resourceFor(gvk)
+	if err != nil {
+		return nil, err
+	}
+	// Check if operation is allowed for all namespaces (applicable for namespaced resources)
+	isNamespaced, _ := k.isNamespaced(gvk)
+	if isNamespaced && !k.canIUse(ctx, gvr, namespace, "list") && namespace == "" {
+		namespace = configuredNamespace()
+	}
+	return k.dynamicClient.Resource(*gvr).Namespace(namespace).List(ctx, metav1.ListOptions{})
+}
+
 func (k *Kubernetes) resourcesCreateOrUpdate(ctx context.Context, resources []*unstructured.Unstructured) (string, error) {
 	for i, obj := range resources {
 		gvk := obj.GroupVersionKind()
@@ -101,11 +105,11 @@ func (k *Kubernetes) resourcesCreateOrUpdate(ctx context.Context, resources []*u
 			k.deferredDiscoveryRESTMapper.Reset()
 		}
 	}
-	yaml, err := marshal(resources)
+	marshalledYaml, err := marshal(resources)
 	if err != nil {
 		return "", err
 	}
-	return "# The following resources (YAML) have been created or updated successfully\n" + yaml, nil
+	return "# The following resources (YAML) have been created or updated successfully\n" + marshalledYaml, nil
 }
 
 func (k *Kubernetes) resourceFor(gvk *schema.GroupVersionKind) (*schema.GroupVersionResource, error) {
