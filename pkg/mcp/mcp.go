@@ -27,12 +27,6 @@ func NewSever() (*Server, error) {
 	if err := s.reloadKubernetesClient(); err != nil {
 		return nil, err
 	}
-	s.server.AddTools(slices.Concat(
-		s.initConfiguration(),
-		s.initEvents(),
-		s.initPods(),
-		s.initResources(),
-	)...)
 	return s, nil
 }
 
@@ -42,6 +36,12 @@ func (s *Server) reloadKubernetesClient() error {
 		return err
 	}
 	s.k = k
+	s.server.SetTools(slices.Concat(
+		s.initConfiguration(),
+		s.initEvents(),
+		s.initPods(),
+		s.initResources(),
+	)...)
 	return nil
 }
 
