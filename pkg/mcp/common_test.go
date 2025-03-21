@@ -129,6 +129,7 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 
 func (c *mcpContext) afterEach() {
 	c.cancel()
+	c.mcpServer.Close()
 	_ = c.mcpClient.Close()
 	c.mcpHttpServer.Close()
 }

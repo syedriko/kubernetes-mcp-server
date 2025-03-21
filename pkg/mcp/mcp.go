@@ -27,6 +27,7 @@ func NewSever() (*Server, error) {
 	if err := s.reloadKubernetesClient(); err != nil {
 		return nil, err
 	}
+	s.k.WatchKubeConfig(s.reloadKubernetesClient)
 	return s, nil
 }
 
@@ -55,6 +56,12 @@ func (s *Server) ServeSse(baseUrl string) *server.SSEServer {
 		options = append(options, server.WithBaseURL(baseUrl))
 	}
 	return server.NewSSEServer(s.server, options...)
+}
+
+func (s *Server) Close() {
+	if s.k != nil {
+		s.k.Close()
+	}
 }
 
 func NewTextResult(content string, err error) *mcp.CallToolResult {

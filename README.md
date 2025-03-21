@@ -13,8 +13,9 @@ https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
 A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.marcnuri.com/model-context-protocol-mcp-introduction) server implementation with support for OpenShift.
 
-- **✅ Configuration**: View and manage the [Kubernetes `.kube/config`](https://blog.marcnuri.com/where-is-my-default-kubeconfig-file).
-  - **View** the current configuration.
+- **✅ Configuration**:
+  - Automatically detect changes in the Kubernetes configuration and update the MCP server.
+  - **View** and manage the current [Kubernetes `.kube/config`](https://blog.marcnuri.com/where-is-my-default-kubeconfig-file) or in-cluster configuration.
 - **✅ Generic Kubernetes Resources**: Perform operations on any Kubernetes resource.
   - Any CRUD operation (Create or Update, Get, List, Delete).
 - **✅ Pods**: Perform Pod-specific operations.

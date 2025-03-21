@@ -42,6 +42,7 @@ Kubernetes Model Context Protocol (MCP) server
 		if err != nil {
 			panic(err)
 		}
+		defer mcpServer.Close()
 
 		var sseServer *server.SSEServer
 		if ssePort := viper.GetInt("sse-port"); ssePort > 0 {
@@ -49,12 +50,10 @@ Kubernetes Model Context Protocol (MCP) server
 			if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
 				panic(err)
 			}
+			defer sseServer.Shutdown(cmd.Context())
 		}
 		if err := mcpServer.ServeStdio(); err != nil && !errors.Is(err, context.Canceled) {
 			panic(err)
-		}
-		if sseServer != nil {
-			_ = sseServer.Shutdown(cmd.Context())
 		}
 	},
 }
