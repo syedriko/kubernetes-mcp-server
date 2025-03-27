@@ -32,6 +32,10 @@ If you're using the native binaries you don't even need to have Node or Python i
 
 ## 🚀 Getting Started <a id="getting-started"></a>
 
+### Requirements
+
+- Access to a Kubernetes cluster.
+
 ### Claude Desktop
 
 #### Using npx
