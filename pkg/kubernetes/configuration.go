@@ -32,7 +32,8 @@ func ConfigurationView(minify bool) (string, error) {
 		}
 	}
 	if err = clientcmdapi.FlattenConfig(&cfg); err != nil {
-		return "", err
+		// ignore error
+		//return "", err
 	}
 	convertedObj, err := latest.Scheme.ConvertToVersion(&cfg, latest.ExternalVersion)
 	if err != nil {
