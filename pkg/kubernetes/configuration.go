@@ -5,7 +5,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 )
 
-func ConfigurationView() (string, error) {
+func ConfigurationView(minify bool) (string, error) {
 	var cfg clientcmdapi.Config
 	var err error
 	inClusterConfig, err := InClusterConfig()
@@ -26,8 +26,10 @@ func ConfigurationView() (string, error) {
 	} else if cfg, err = resolveConfig().RawConfig(); err != nil {
 		return "", err
 	}
-	if err = clientcmdapi.MinifyConfig(&cfg); err != nil {
-		return "", err
+	if minify {
+		if err = clientcmdapi.MinifyConfig(&cfg); err != nil {
+			return "", err
+		}
 	}
 	if err = clientcmdapi.FlattenConfig(&cfg); err != nil {
 		return "", err

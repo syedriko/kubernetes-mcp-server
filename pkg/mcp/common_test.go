@@ -144,19 +144,24 @@ func testCase(t *testing.T, test func(c *mcpContext)) {
 // withKubeConfig sets up a fake kubeconfig in the temp directory based on the provided rest.Config
 func (c *mcpContext) withKubeConfig(rc *rest.Config) *api.Config {
 	fakeConfig := api.NewConfig()
-	fakeConfig.CurrentContext = "fake-context"
-	fakeConfig.Contexts["fake-context"] = api.NewContext()
-	fakeConfig.Contexts["fake-context"].Cluster = "fake"
-	fakeConfig.Contexts["fake-context"].AuthInfo = "fake"
 	fakeConfig.Clusters["fake"] = api.NewCluster()
 	fakeConfig.Clusters["fake"].Server = "https://example.com"
+	fakeConfig.Clusters["additional-cluster"] = api.NewCluster()
 	fakeConfig.AuthInfos["fake"] = api.NewAuthInfo()
+	fakeConfig.AuthInfos["additional-auth"] = api.NewAuthInfo()
 	if rc != nil {
 		fakeConfig.Clusters["fake"].Server = rc.Host
 		fakeConfig.Clusters["fake"].CertificateAuthorityData = rc.TLSClientConfig.CAData
 		fakeConfig.AuthInfos["fake"].ClientKeyData = rc.TLSClientConfig.KeyData
 		fakeConfig.AuthInfos["fake"].ClientCertificateData = rc.TLSClientConfig.CertData
 	}
+	fakeConfig.Contexts["fake-context"] = api.NewContext()
+	fakeConfig.Contexts["fake-context"].Cluster = "fake"
+	fakeConfig.Contexts["fake-context"].AuthInfo = "fake"
+	fakeConfig.Contexts["additional-context"] = api.NewContext()
+	fakeConfig.Contexts["additional-context"].Cluster = "additional-cluster"
+	fakeConfig.Contexts["additional-context"].AuthInfo = "additional-auth"
+	fakeConfig.CurrentContext = "fake-context"
 	kubeConfig := filepath.Join(c.tempDir, "config")
 	_ = clientcmd.WriteToFile(*fakeConfig, kubeConfig)
 	_ = os.Setenv("KUBECONFIG", kubeConfig)
