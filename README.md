@@ -11,7 +11,7 @@ https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
 ## ✨ Features <a id="features"></a>
 
-A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.marcnuri.com/model-context-protocol-mcp-introduction) server implementation with support for OpenShift.
+A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.marcnuri.com/model-context-protocol-mcp-introduction) server implementation with support for **OpenShift**.
 
 - **✅ Configuration**:
   - Automatically detect changes in the Kubernetes configuration and update the MCP server.
@@ -25,6 +25,10 @@ A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.m
   - **Show logs** for a pod by name from the specified namespace.
   - **Run** a container image in a pod and optionally expose it.
 - **✅ Events**: View Kubernetes events in all namespaces or in a specific namespace.
+
+Unlike other Kubernetes MCP server implementations, this IS NOT just a wrapper around `kubectl` or `helm` command-line tools.
+There is no need for external dependencies or tools to be installed on the system.
+If you're using the native binaries you don't even need to have Node or Python installed on your system.
 
 ## 🚀 Getting Started <a id="getting-started"></a>
 
