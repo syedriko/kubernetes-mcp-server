@@ -99,6 +99,14 @@ Demo showcasing how Kubernetes MCP server is leveraged by Claude Desktop to auto
 
 https://github.com/user-attachments/assets/a576176d-a142-4c19-b9aa-a83dc4b8d941
 
+### _Vibe Coding_ a simple game and deploying it to OpenShift
+
+In this demo, I walk you through the process of _Vibe Coding_ a simple game using VS Code and how to leverage [Podman MCP server](https://github.com/manusa/podman-mcp-server) and Kubernetes MCP server to deploy it to OpenShift.
+
+<a href="https://www.youtube.com/watch?v=l05jQDSrzVI" target="_blank">
+ <img src="docs/images/vibe-coding.jpg" alt="Vibe Coding: Build & Deploy a Game on Kubernetes" width="240"  />
+</a>
+
 ## ⚙️ Configuration <a id="configuration"></a>
 
 The Kubernetes MCP server can be configured using command line (CLI) arguments.
