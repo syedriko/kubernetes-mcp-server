@@ -34,6 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/tools/setup-envtest/versions"
 	"sigs.k8s.io/controller-runtime/tools/setup-envtest/workflows"
 	"testing"
+	"time"
 )
 
 // envTest has an expensive setup, so we only want to do it once per entire test run.
@@ -242,6 +243,14 @@ func (c *mcpContext) crdApply(resource string) func() {
 		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, crd.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: ptr.To(int64(0)),
 		})
+		iteration := 0
+		for iteration < 10 {
+			if _, derr := apiExtensionsV1Client.CustomResourceDefinitions().Get(c.ctx, crd.Name, metav1.GetOptions{}); derr != nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+			iteration++
+		}
 		if err != nil {
 			panic(fmt.Errorf("failed to delete CRD %v", err))
 		}
