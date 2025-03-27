@@ -192,14 +192,14 @@ func (c *mcpContext) inOpenShift() func() {
                 "name": "v1","served": true,"storage": true,
                 "schema": {"openAPIV3Schema": {"type": "object","x-kubernetes-preserve-unknown-fields": true}}
               }],
-              "scope": "Namespaced",
+              "scope": "%s",
               "names": {"plural": "%s","singular": "%s","kind": "%s"}
             }
           }`
 	removeProjects := c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
-		"projects", "project", "Project"))
+		"Cluster", "projects", "project", "Project"))
 	removeRoutes := c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
-		"routes", "route", "Route"))
+		"Namespaced", "routes", "route", "Route"))
 	return func() {
 		removeProjects()
 		removeRoutes()

@@ -40,6 +40,7 @@ func (s *Server) reloadKubernetesClient() error {
 	s.server.SetTools(slices.Concat(
 		s.initConfiguration(),
 		s.initEvents(),
+		s.initNamespaces(),
 		s.initPods(),
 		s.initResources(),
 	)...)
