@@ -18,7 +18,15 @@ import (
 
 // InClusterConfig is a variable that holds the function to get the in-cluster config
 // Exposed for testing
-var InClusterConfig = rest.InClusterConfig
+var InClusterConfig = func() (*rest.Config, error) {
+	// TODO use kubernetes.default.svc instead of resolved server
+	// Currently running into: `http: server gave HTTP response to HTTPS client`
+	inClusterConfig, err := rest.InClusterConfig()
+	if inClusterConfig != nil {
+		inClusterConfig.Host = "https://kubernetes.default.svc"
+	}
+	return inClusterConfig, err
+}
 
 type CloseWatchKubeConfig func() error
 
@@ -28,7 +36,7 @@ type Kubernetes struct {
 	CloseWatchKubeConfig        CloseWatchKubeConfig
 	scheme                      *runtime.Scheme
 	parameterCodec              *runtime.ParameterCodec
-	clientSet                   *kubernetes.Clientset
+	clientSet                   kubernetes.Interface
 	discoveryClient             *discovery.DiscoveryClient
 	deferredDiscoveryRESTMapper *restmapper.DeferredDiscoveryRESTMapper
 	dynamicClient               *dynamic.DynamicClient
