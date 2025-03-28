@@ -1,7 +1,9 @@
 package kubernetes
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -9,8 +11,10 @@ import (
 	labelutil "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
+	"k8s.io/client-go/tools/remotecommand"
 )
 
 func (k *Kubernetes) PodsListInAllNamespaces(ctx context.Context) (string, error) {
@@ -167,4 +171,64 @@ func (k *Kubernetes) PodsRun(ctx context.Context, namespace, name, image string,
 		toCreate = append(toCreate, u)
 	}
 	return k.resourcesCreateOrUpdate(ctx, toCreate)
+}
+
+func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container string, command []string) (string, error) {
+	namespace = namespaceOrDefault(namespace)
+	pod, err := k.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+	// https://github.com/kubernetes/kubectl/blob/5366de04e168bcbc11f5e340d131a9ca8b7d0df4/pkg/cmd/exec/exec.go#L350-L352
+	if pod.Status.Phase == v1.PodSucceeded || pod.Status.Phase == v1.PodFailed {
+		return "", fmt.Errorf("cannot exec into a container in a completed pod; current phase is %s", pod.Status.Phase)
+	}
+	podExecOptions := &v1.PodExecOptions{
+		Command: command,
+		Stdout:  true,
+		Stderr:  true,
+	}
+	executor, err := k.createExecutor(namespace, name, podExecOptions)
+	if err != nil {
+		return "", err
+	}
+	if container == "" {
+		container = pod.Spec.Containers[0].Name
+	}
+	stdout := bytes.NewBuffer(make([]byte, 0))
+	stderr := bytes.NewBuffer(make([]byte, 0))
+	if err = executor.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdout: stdout, Stderr: stderr, Tty: false,
+	}); err != nil {
+		return "", err
+	}
+	if stdout.Len() > 0 {
+		return stdout.String(), nil
+	}
+	if stderr.Len() > 0 {
+		return stderr.String(), nil
+	}
+	return "", nil
+}
+
+func (k *Kubernetes) createExecutor(namespace, name string, podExecOptions *v1.PodExecOptions) (remotecommand.Executor, error) {
+	// Compute URL
+	// https://github.com/kubernetes/kubectl/blob/5366de04e168bcbc11f5e340d131a9ca8b7d0df4/pkg/cmd/exec/exec.go#L382-L397
+	req := k.clientSet.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Namespace(namespace).
+		Name(name).
+		SubResource("exec")
+	req.VersionedParams(podExecOptions, *k.parameterCodec)
+	spdyExec, err := remotecommand.NewSPDYExecutor(k.cfg, "POST", req.URL())
+	if err != nil {
+		return nil, err
+	}
+	webSocketExec, err := remotecommand.NewWebSocketExecutor(k.cfg, "GET", req.URL().String())
+	if err != nil {
+		return nil, err
+	}
+	return remotecommand.NewFallbackExecutor(webSocketExec, spdyExec, func(err error) bool {
+		return httpstream.IsUpgradeFailure(err) || httpstream.IsHTTPSProxyError(err)
+	})
 }

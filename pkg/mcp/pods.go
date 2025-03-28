@@ -27,6 +27,24 @@ func (s *Server) initPods() []server.ServerTool {
 			mcp.WithString("namespace", mcp.Description("Namespace to delete the Pod from")),
 			mcp.WithString("name", mcp.Description("Name of the Pod to delete"), mcp.Required()),
 		), s.podsDelete},
+		{mcp.NewTool("pods_exec",
+			mcp.WithDescription("Execute a command in a Kubernetes Pod in the current or provided namespace with the provided name and command"),
+			mcp.WithString("namespace", mcp.Description("Namespace to get the Pod logs from")),
+			mcp.WithString("name", mcp.Description("Name of the Pod to get the logs from"), mcp.Required()),
+			mcp.WithArray("command", mcp.Description("Command to execute in the Pod container. "+
+				"The first item is the command to be run, and the rest are the arguments to that command. "+
+				`Example: ["ls", "-l", "/tmp"]`),
+				// TODO: manual fix to ensure that the items property gets initialized (Gemini)
+				// https://www.googlecloudcommunity.com/gc/AI-ML/Gemini-API-400-Bad-Request-Array-fields-breaks-function-calling/m-p/769835?nobounce
+				func(schema map[string]interface{}) {
+					schema["type"] = "array"
+					schema["items"] = map[string]interface{}{
+						"type": "string",
+					}
+				},
+				mcp.Required(),
+			),
+		), s.podsExec},
 		{mcp.NewTool("pods_log",
 			mcp.WithDescription("Get the logs of a Kubernetes Pod in the current or provided namespace with the provided name"),
 			mcp.WithString("namespace", mcp.Description("Namespace to get the Pod logs from")),
@@ -90,6 +108,35 @@ func (s *Server) podsDelete(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.
 	ret, err := s.k.PodsDelete(ctx, ns.(string), name.(string))
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to delete pod %s in namespace %s: %v", name, ns, err)), nil
+	}
+	return NewTextResult(ret, err), nil
+}
+
+func (s *Server) podsExec(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	ns := ctr.Params.Arguments["namespace"]
+	if ns == nil {
+		ns = ""
+	}
+	name := ctr.Params.Arguments["name"]
+	if name == nil {
+		return NewTextResult("", errors.New("failed to exec in pod, missing argument name")), nil
+	}
+	commandArg := ctr.Params.Arguments["command"]
+	command := make([]string, 0)
+	if _, ok := commandArg.([]interface{}); ok {
+		for _, cmd := range commandArg.([]interface{}) {
+			if _, ok := cmd.(string); ok {
+				command = append(command, cmd.(string))
+			}
+		}
+	} else {
+		return NewTextResult("", errors.New("failed to exec in pod, invalid command argument")), nil
+	}
+	ret, err := s.k.PodsExec(ctx, ns.(string), name.(string), "", command)
+	if err != nil {
+		return NewTextResult("", fmt.Errorf("failed to exec in pod %s in namespace %s: %v", name, ns, err)), nil
+	} else if ret == "" {
+		ret = fmt.Sprintf("The executed command in pod %s in namespace %s has not produced any output", name, ns)
 	}
 	return NewTextResult(ret, err), nil
 }

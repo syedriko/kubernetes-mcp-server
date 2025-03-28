@@ -2,7 +2,9 @@ package kubernetes
 
 import (
 	"github.com/fsnotify/fsnotify"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/dynamic"
@@ -24,6 +26,8 @@ type Kubernetes struct {
 	cfg                         *rest.Config
 	kubeConfigFiles             []string
 	CloseWatchKubeConfig        CloseWatchKubeConfig
+	scheme                      *runtime.Scheme
+	parameterCodec              *runtime.ParameterCodec
 	clientSet                   *kubernetes.Clientset
 	discoveryClient             *discovery.DiscoveryClient
 	deferredDiscoveryRESTMapper *restmapper.DeferredDiscoveryRESTMapper
@@ -47,9 +51,16 @@ func NewKubernetes() (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
+	scheme := runtime.NewScheme()
+	if err = v1.AddToScheme(scheme); err != nil {
+		return nil, err
+	}
+	parameterCodec := runtime.NewParameterCodec(scheme)
 	return &Kubernetes{
 		cfg:                         cfg,
 		kubeConfigFiles:             resolveConfig().ConfigAccess().GetLoadingPrecedence(),
+		scheme:                      scheme,
+		parameterCodec:              &parameterCodec,
 		clientSet:                   clientSet,
 		discoveryClient:             discoveryClient,
 		deferredDiscoveryRESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient)),

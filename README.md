@@ -16,13 +16,14 @@ A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.m
 - **✅ Configuration**:
   - Automatically detect changes in the Kubernetes configuration and update the MCP server.
   - **View** and manage the current [Kubernetes `.kube/config`](https://blog.marcnuri.com/where-is-my-default-kubeconfig-file) or in-cluster configuration.
-- **✅ Generic Kubernetes Resources**: Perform operations on any Kubernetes resource.
+- **✅ Generic Kubernetes Resources**: Perform operations on **any** Kubernetes or OpenShift resource.
   - Any CRUD operation (Create or Update, Get, List, Delete).
 - **✅ Pods**: Perform Pod-specific operations.
   - **List** pods in all namespaces or in a specific namespace.
   - **Get** a pod by name from the specified namespace.
   - **Delete** a pod by name from the specified namespace.
   - **Show logs** for a pod by name from the specified namespace.
+  - **Exec** into a pod and run a command.
   - **Run** a container image in a pod and optionally expose it.
 - **✅ Namespaces**: List Kubernetes Namespaces.
 - **✅ Events**: View Kubernetes events in all namespaces or in a specific namespace.
