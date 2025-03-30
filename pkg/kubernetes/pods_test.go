@@ -13,14 +13,10 @@ import (
 func TestPodsExec(t *testing.T) {
 	mockServer := NewMockServer()
 	defer mockServer.Close()
-	_ = mockServer.ClientSet().Tracker().Add(&v1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Namespace: "default",
-			Name:      "pod-to-exec",
-		},
-		Spec: v1.PodSpec{Containers: []v1.Container{{Name: "container-to-exec"}}},
-	})
 	mockServer.Handle(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/api/v1/namespaces/default/pods/pod-to-exec/exec" {
+			return
+		}
 		var stdin, stdout bytes.Buffer
 		ctx, err := createHTTPStreams(w, req, &StreamOptions{
 			Stdin:  &stdin,
@@ -32,9 +28,19 @@ func TestPodsExec(t *testing.T) {
 			return
 		}
 		defer ctx.conn.Close()
-		if req.URL.Path == "/api/v1/namespaces/default/pods/pod-to-exec/exec" {
-			_, _ = io.WriteString(ctx.stdoutStream, "total 0\n")
+		_, _ = io.WriteString(ctx.stdoutStream, "total 0\n")
+	}))
+	mockServer.Handle(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if req.URL.Path != "/api/v1/namespaces/default/pods/pod-to-exec" {
+			return
 		}
+		writeObject(w, &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: "default",
+				Name:      "pod-to-exec",
+			},
+			Spec: v1.PodSpec{Containers: []v1.Container{{Name: "container-to-exec"}}},
+		})
 	}))
 	k8s := mockServer.NewKubernetes()
 	out, err := k8s.PodsExec(context.Background(), "default", "pod-to-exec", "", []string{"ls", "-l"})
