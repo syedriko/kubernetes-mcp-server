@@ -2,13 +2,14 @@ name: Release as container image
 
 on:
   push:
-    # TODO publish on tag
     branches:
       - main
+    tags:
+      - '*'
 
 env:
   IMAGE_NAME: quay.io/manusa/kubernetes_mcp_server
-  TAG: latest
+  TAG: ${{ github.ref_name == 'main' && 'latest' || github.ref_type == 'tag' && github.ref_name && startsWith(github.ref_name, 'v') && github.ref_name || 'unknown' }}
 
 jobs:
   publish-platform-images:
