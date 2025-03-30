@@ -35,7 +35,8 @@ type Kubernetes struct {
 	kubeConfigFiles             []string
 	CloseWatchKubeConfig        CloseWatchKubeConfig
 	scheme                      *runtime.Scheme
-	parameterCodec              *runtime.ParameterCodec
+	parameterCodec              runtime.ParameterCodec
+	restClient                  rest.Interface
 	clientSet                   kubernetes.Interface
 	discoveryClient             *discovery.DiscoveryClient
 	deferredDiscoveryRESTMapper *restmapper.DeferredDiscoveryRESTMapper
@@ -47,7 +48,11 @@ func NewKubernetes() (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	clientSet, err := kubernetes.NewForConfig(cfg)
+	restClient, err := rest.HTTPClientFor(cfg)
+	if err != nil {
+		return nil, err
+	}
+	clientSet, err := kubernetes.NewForConfigAndClient(cfg, restClient)
 	if err != nil {
 		return nil, err
 	}
@@ -63,12 +68,11 @@ func NewKubernetes() (*Kubernetes, error) {
 	if err = v1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
-	parameterCodec := runtime.NewParameterCodec(scheme)
 	return &Kubernetes{
 		cfg:                         cfg,
 		kubeConfigFiles:             resolveConfig().ConfigAccess().GetLoadingPrecedence(),
 		scheme:                      scheme,
-		parameterCodec:              &parameterCodec,
+		parameterCodec:              runtime.NewParameterCodec(scheme),
 		clientSet:                   clientSet,
 		discoveryClient:             discoveryClient,
 		deferredDiscoveryRESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient)),
@@ -148,7 +152,11 @@ func resolveClientConfig() (*rest.Config, error) {
 	if err == nil && inClusterConfig != nil {
 		return inClusterConfig, nil
 	}
-	return resolveConfig().ClientConfig()
+	cfg, err := resolveConfig().ClientConfig()
+	if cfg != nil && cfg.UserAgent == "" {
+		cfg.UserAgent = rest.DefaultKubernetesUserAgent()
+	}
+	return cfg, err
 }
 
 func configuredNamespace() string {
