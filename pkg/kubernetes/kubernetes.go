@@ -36,7 +36,6 @@ type Kubernetes struct {
 	CloseWatchKubeConfig        CloseWatchKubeConfig
 	scheme                      *runtime.Scheme
 	parameterCodec              runtime.ParameterCodec
-	restClient                  rest.Interface
 	clientSet                   kubernetes.Interface
 	discoveryClient             *discovery.DiscoveryClient
 	deferredDiscoveryRESTMapper *restmapper.DeferredDiscoveryRESTMapper
@@ -48,11 +47,7 @@ func NewKubernetes() (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	restClient, err := rest.HTTPClientFor(cfg)
-	if err != nil {
-		return nil, err
-	}
-	clientSet, err := kubernetes.NewForConfigAndClient(cfg, restClient)
+	clientSet, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
 		return nil, err
 	}

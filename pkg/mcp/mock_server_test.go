@@ -1,4 +1,4 @@
-package kubernetes
+package mcp
 
 import (
 	"encoding/json"
@@ -10,26 +10,21 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/apimachinery/pkg/util/httpstream/spdy"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"net/http"
 	"net/http/httptest"
 )
 
 type MockServer struct {
-	server         *httptest.Server
-	config         *rest.Config
-	restClient     *rest.RESTClient
-	restHandlers   []http.HandlerFunc
-	clientSet      kubernetes.Interface
-	parameterCodec runtime.ParameterCodec
+	server       *httptest.Server
+	config       *rest.Config
+	restHandlers []http.HandlerFunc
 }
 
 func NewMockServer() *MockServer {
 	ms := &MockServer{}
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
-	ms.parameterCodec = runtime.NewParameterCodec(scheme)
 	ms.server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		for _, handler := range ms.restHandlers {
 			handler(w, req)
@@ -44,9 +39,7 @@ func NewMockServer() *MockServer {
 			GroupVersion:         &v1.SchemeGroupVersion,
 		},
 	}
-	ms.restClient, _ = rest.RESTClientFor(ms.config)
 	ms.restHandlers = make([]http.HandlerFunc, 0)
-	ms.clientSet = kubernetes.NewForConfigOrDie(ms.config)
 	return ms
 }
 
@@ -56,15 +49,6 @@ func (m *MockServer) Close() {
 
 func (m *MockServer) Handle(handler http.Handler) {
 	m.restHandlers = append(m.restHandlers, handler.ServeHTTP)
-}
-
-func (m *MockServer) NewKubernetes() *Kubernetes {
-	return &Kubernetes{
-		cfg:            m.config,
-		restClient:     m.restClient,
-		clientSet:      m.clientSet,
-		parameterCodec: m.parameterCodec,
-	}
 }
 
 func writeObject(w http.ResponseWriter, obj runtime.Object) {

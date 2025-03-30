@@ -214,7 +214,7 @@ func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container st
 func (k *Kubernetes) createExecutor(namespace, name string, podExecOptions *v1.PodExecOptions) (remotecommand.Executor, error) {
 	// Compute URL
 	// https://github.com/kubernetes/kubectl/blob/5366de04e168bcbc11f5e340d131a9ca8b7d0df4/pkg/cmd/exec/exec.go#L382-L397
-	req := k.restClient.
+	req := k.clientSet.CoreV1().RESTClient().
 		Post().
 		Resource("pods").
 		Namespace(namespace).
