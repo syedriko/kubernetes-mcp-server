@@ -43,36 +43,32 @@ type Kubernetes struct {
 }
 
 func NewKubernetes() (*Kubernetes, error) {
-	cfg, err := resolveClientConfig()
+	k8s := &Kubernetes{}
+	var err error
+	k8s.cfg, err = resolveClientConfig()
 	if err != nil {
 		return nil, err
 	}
-	clientSet, err := kubernetes.NewForConfig(cfg)
+	k8s.kubeConfigFiles = resolveConfig().ConfigAccess().GetLoadingPrecedence()
+	k8s.clientSet, err = kubernetes.NewForConfig(k8s.cfg)
 	if err != nil {
 		return nil, err
 	}
-	discoveryClient, err := discovery.NewDiscoveryClientForConfig(cfg)
+	k8s.discoveryClient, err = discovery.NewDiscoveryClientForConfig(k8s.cfg)
 	if err != nil {
 		return nil, err
 	}
-	dynamicClient, err := dynamic.NewForConfig(cfg)
+	k8s.deferredDiscoveryRESTMapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(k8s.discoveryClient))
+	k8s.dynamicClient, err = dynamic.NewForConfig(k8s.cfg)
 	if err != nil {
 		return nil, err
 	}
-	scheme := runtime.NewScheme()
-	if err = v1.AddToScheme(scheme); err != nil {
+	k8s.scheme = runtime.NewScheme()
+	if err = v1.AddToScheme(k8s.scheme); err != nil {
 		return nil, err
 	}
-	return &Kubernetes{
-		cfg:                         cfg,
-		kubeConfigFiles:             resolveConfig().ConfigAccess().GetLoadingPrecedence(),
-		scheme:                      scheme,
-		parameterCodec:              runtime.NewParameterCodec(scheme),
-		clientSet:                   clientSet,
-		discoveryClient:             discoveryClient,
-		deferredDiscoveryRESTMapper: restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(discoveryClient)),
-		dynamicClient:               dynamicClient,
-	}, nil
+	k8s.parameterCodec = runtime.NewParameterCodec(k8s.scheme)
+	return k8s, nil
 }
 
 func (k *Kubernetes) WatchKubeConfig(onKubeConfigChange func() error) {
