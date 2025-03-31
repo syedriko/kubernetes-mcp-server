@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"github.com/manusa/kubernetes-mcp-server/pkg/mcp"
 	"github.com/manusa/kubernetes-mcp-server/pkg/version"
@@ -9,6 +10,10 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
+	"k8s.io/klog/v2"
+	"k8s.io/klog/v2/textlogger"
+	"os"
+	"strconv"
 )
 
 var rootCmd = &cobra.Command{
@@ -34,6 +39,7 @@ Kubernetes Model Context Protocol (MCP) server
 
   # TODO: add more examples`,
 	Run: func(cmd *cobra.Command, args []string) {
+		initLogging()
 		if viper.GetBool("version") {
 			fmt.Println(version.Version)
 			return
@@ -47,10 +53,12 @@ Kubernetes Model Context Protocol (MCP) server
 		var sseServer *server.SSEServer
 		if ssePort := viper.GetInt("sse-port"); ssePort > 0 {
 			sseServer = mcpServer.ServeSse(viper.GetString("sse-base-url"))
+			defer func() { _ = sseServer.Shutdown(cmd.Context()) }()
+			klog.V(0).Infof("SSE server starting on port %d", ssePort)
 			if err := sseServer.Start(fmt.Sprintf(":%d", ssePort)); err != nil {
-				panic(err)
+				klog.Errorf("Failed to start SSE server: %s", err)
+				return
 			}
-			defer sseServer.Shutdown(cmd.Context())
 		}
 		if err := mcpServer.ServeStdio(); err != nil && !errors.Is(err, context.Canceled) {
 			panic(err)
@@ -60,6 +68,7 @@ Kubernetes Model Context Protocol (MCP) server
 
 func init() {
 	rootCmd.Flags().BoolP("version", "v", false, "Print version information and quit")
+	rootCmd.Flags().IntP("log-level", "", 0, "Set the log level (from 0 to 9)")
 	rootCmd.Flags().IntP("sse-port", "", 0, "Start a SSE server on the specified port")
 	rootCmd.Flags().StringP("sse-base-url", "", "", "SSE public base URL to use when sending the endpoint message (e.g. https://example.com)")
 	_ = viper.BindPFlags(rootCmd.Flags())
@@ -68,5 +77,15 @@ func init() {
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
 		panic(err)
+	}
+}
+
+func initLogging() {
+	logger := textlogger.NewLogger(textlogger.NewConfig(textlogger.Output(os.Stdout)))
+	klog.SetLoggerWithOptions(logger)
+	flagSet := flag.NewFlagSet("kubernetes-mcp-server", flag.ContinueOnError)
+	klog.InitFlags(flagSet)
+	if logLevel := viper.GetInt("log-level"); logLevel >= 0 {
+		_ = flagSet.Parse([]string{"--v", strconv.Itoa(logLevel)})
 	}
 }

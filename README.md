@@ -128,9 +128,10 @@ npx kubernetes-mcp-server@latest --help
 
 ### Configuration Options
 
-| Option       | Description                                                                              |
-|--------------|------------------------------------------------------------------------------------------|
-| `--sse-port` | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port. |
+| Option        | Description                                                                                                                                                                                                                                                                                   |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--sse-port`  | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port.                                                                                                                                                                                                      |
+| `--log-level` | Sets the logging level (values [from 0-9](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md)). Similar to [kubectl logging levels](https://kubernetes.io/docs/reference/kubectl/quick-reference/#kubectl-output-verbosity-and-debugging). |
 
 ## 🧑‍💻 Development <a id="development"></a>
 
