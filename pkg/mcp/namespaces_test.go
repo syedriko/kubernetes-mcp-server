@@ -51,7 +51,7 @@ func TestProjectsListInOpenShift(t *testing.T) {
 		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
 		c.mcpServer.server.AddTools(c.mcpServer.initNamespaces()...)
 		dynamicClient := dynamic.NewForConfigOrDie(envTestRestConfig)
-		_, err := dynamicClient.Resource(schema.GroupVersionResource{Group: "project.openshift.io", Version: "v1", Resource: "projects"}).
+		_, _ = dynamicClient.Resource(schema.GroupVersionResource{Group: "project.openshift.io", Version: "v1", Resource: "projects"}).
 			Create(c.ctx, &unstructured.Unstructured{Object: map[string]interface{}{
 				"apiVersion": "project.openshift.io/v1",
 				"kind":       "Project",
@@ -59,7 +59,6 @@ func TestProjectsListInOpenShift(t *testing.T) {
 					"name": "an-openshift-project",
 				},
 			}}, metav1.CreateOptions{})
-		println(err)
 		toolResult, err := c.callTool("projects_list", map[string]interface{}{})
 		t.Run("projects_list returns project list", func(t *testing.T) {
 			if err != nil {

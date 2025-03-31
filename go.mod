@@ -1,6 +1,6 @@
 module github.com/manusa/kubernetes-mcp-server
 
-go 1.23.5
+go 1.24.1
 
 require (
 	github.com/fsnotify/fsnotify v1.8.0
