@@ -7,6 +7,13 @@ import shutil
 import tempfile
 import urllib.request
 
+if sys.version_info >= (3, 8):
+    from importlib.metadata import version
+else:
+    from importlib_metadata import version
+
+__version__ = version("kubernetes-mcp-server")
+
 def get_platform_binary():
     """Determine the correct binary for the current platform."""
     system = platform.system().lower()
@@ -29,11 +36,11 @@ def get_platform_binary():
     else:
         raise RuntimeError(f"Unsupported operating system: {system}")
 
-def download_binary(version="latest", destination=None):
+def download_binary(binary_version="latest", destination=None):
     """Download the correct binary for the current platform."""
     binary_name = get_platform_binary()
     if destination is None:
-        destination = Path.home() / ".kubernetes-mcp-server" / "bin"
+        destination = Path.home() / ".kubernetes-mcp-server" / "bin" / binary_version
 
     destination = Path(destination)
     destination.mkdir(parents=True, exist_ok=True)
@@ -43,10 +50,10 @@ def download_binary(version="latest", destination=None):
         return binary_path
 
     base_url = "https://github.com/manusa/kubernetes-mcp-server/releases"
-    if version == "latest":
+    if binary_version == "latest":
         release_url = f"{base_url}/latest/download/{binary_name}"
     else:
-        release_url = f"{base_url}/download/{version}/{binary_name}"
+        release_url = f"{base_url}/download/v{binary_version}/{binary_name}"
 
     # Download the binary
     print(f"Downloading {binary_name} from {release_url}")
@@ -71,7 +78,7 @@ def execute(args=None):
         args = []
 
     try:
-        binary_path = download_binary()
+        binary_path = download_binary(binary_version=__version__)
         cmd = [str(binary_path)] + args
 
         # Execute the binary with the provided arguments
