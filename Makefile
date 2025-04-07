@@ -84,9 +84,7 @@ python-publish: ## Publish the python packages
 	cd ./python && \
 	sed -i "s/version = \".*\"/version = \"$(NPM_VERSION)\"/" pyproject.toml && \
 	uv build && \
-	uv push
-
-
+	uv publish
 
 .PHONY: test
 test: ## Run the tests
