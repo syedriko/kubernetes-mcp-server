@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Server) initResources() []server.ServerTool {
-	commonApiVersion := "v1 Pod, v1 Service, apps/v1 Deployment, networking.k8s.io/v1 Ingress"
+	commonApiVersion := "v1 Pod, v1 Service, v1 Node, apps/v1 Deployment, networking.k8s.io/v1 Ingress"
 	if s.k.IsOpenShift(context.Background()) {
 		commonApiVersion += ", route.openshift.io/v1 Route"
 	}
