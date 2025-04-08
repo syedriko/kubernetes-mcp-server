@@ -9,7 +9,7 @@ import (
 )
 
 func (s *Server) initConfiguration() []server.ServerTool {
-	return []server.ServerTool{
+	tools := []server.ServerTool{
 		{mcp.NewTool("configuration_view",
 			mcp.WithDescription("Get the current Kubernetes configuration content as a kubeconfig YAML"),
 			mcp.WithBoolean("minified", mcp.Description("Return a minified version of the configuration. "+
@@ -18,6 +18,7 @@ func (s *Server) initConfiguration() []server.ServerTool {
 				"(Optional, default true)")),
 		), configurationView},
 	}
+	return tools
 }
 
 func configurationView(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
