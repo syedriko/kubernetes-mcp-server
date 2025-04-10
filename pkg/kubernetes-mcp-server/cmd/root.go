@@ -40,6 +40,7 @@ Kubernetes Model Context Protocol (MCP) server
   # TODO: add more examples`,
 	Run: func(cmd *cobra.Command, args []string) {
 		initLogging()
+		klog.V(5).Infof("Starting kubernetes-mcp-server")
 		if viper.GetBool("version") {
 			fmt.Println(version.Version)
 			return
