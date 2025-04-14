@@ -5,7 +5,7 @@
 [![GitHub release (latest SemVer)](https://img.shields.io/github/v/release/manusa/kubernetes-mcp-server?sort=semver)](https://github.com/manusa/kubernetes-mcp-server/releases/latest)
 [![Build](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml/badge.svg)](https://github.com/manusa/kubernetes-mcp-server/actions/workflows/build.yaml)
 
-[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos) | [⚙️ Configuration](#configuration) | [🧑‍💻 Development](#development)
+[✨ Features](#features) | [🚀 Getting Started](#getting-started) | [🎥 Demos](#demos) | [⚙️ Configuration](#configuration) | [🛠️ Tools](#tools) | [🧑‍💻 Development](#development)
 
 https://github.com/user-attachments/assets/be2b67b3-fc1c-4d11-ae46-93deba8ed98e
 
@@ -95,7 +95,46 @@ extensions:
 
 ```
 
-## Tools
+## 🎥 Demos <a id="demos"></a>
+
+### Diagnosing and automatically fixing an OpenShift Deployment
+
+Demo showcasing how Kubernetes MCP server is leveraged by Claude Desktop to automatically diagnose and fix a deployment in OpenShift without any user assistance.
+
+https://github.com/user-attachments/assets/a576176d-a142-4c19-b9aa-a83dc4b8d941
+
+### _Vibe Coding_ a simple game and deploying it to OpenShift
+
+In this demo, I walk you through the process of _Vibe Coding_ a simple game using VS Code and how to leverage [Podman MCP server](https://github.com/manusa/podman-mcp-server) and Kubernetes MCP server to deploy it to OpenShift.
+
+<a href="https://www.youtube.com/watch?v=l05jQDSrzVI" target="_blank">
+ <img src="docs/images/vibe-coding.jpg" alt="Vibe Coding: Build & Deploy a Game on Kubernetes" width="240"  />
+</a>
+
+## ⚙️ Configuration <a id="configuration"></a>
+
+The Kubernetes MCP server can be configured using command line (CLI) arguments.
+
+You can run the CLI executable either by using `npx` or by downloading the [latest release binary](https://github.com/manusa/kubernetes-mcp-server/releases/latest).
+
+```shell
+# Run the Kubernetes MCP server using npx (in case you have npm installed)
+npx kubernetes-mcp-server@latest --help
+```
+
+```shell
+# Run the Kubernetes MCP server using the latest release binary
+./kubernetes-mcp-server --help
+```
+
+### Configuration Options
+
+| Option        | Description                                                                                                                                                                                                                                                                                   |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `--sse-port`  | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port.                                                                                                                                                                                                      |
+| `--log-level` | Sets the logging level (values [from 0-9](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md)). Similar to [kubectl logging levels](https://kubernetes.io/docs/reference/kubectl/quick-reference/#kubectl-output-verbosity-and-debugging). |
+
+## 🛠️ Tools <a id="tools"></a>
 
 ### `configuration_view`
 
@@ -196,6 +235,10 @@ Run a Kubernetes Pod in the current or provided namespace with the provided cont
   - TCP/IP port to expose from the Pod container
   - No port exposed if not provided
 
+### `projects_list`
+
+List all the OpenShift projects in the current cluster
+
 ### `resources_create_or_update`
 
 Create or update a Kubernetes resource in the current cluster by providing a YAML or JSON representation of the resource
@@ -257,45 +300,6 @@ List Kubernetes resources and objects in the current cluster
   - Namespace to retrieve the namespaced resources from
   - Ignored for cluster-scoped resources
   - Lists resources from all namespaces if not provided
-
-## 🎥 Demos <a id="demos"></a>
-
-### Diagnosing and automatically fixing an OpenShift Deployment
-
-Demo showcasing how Kubernetes MCP server is leveraged by Claude Desktop to automatically diagnose and fix a deployment in OpenShift without any user assistance.
-
-https://github.com/user-attachments/assets/a576176d-a142-4c19-b9aa-a83dc4b8d941
-
-### _Vibe Coding_ a simple game and deploying it to OpenShift
-
-In this demo, I walk you through the process of _Vibe Coding_ a simple game using VS Code and how to leverage [Podman MCP server](https://github.com/manusa/podman-mcp-server) and Kubernetes MCP server to deploy it to OpenShift.
-
-<a href="https://www.youtube.com/watch?v=l05jQDSrzVI" target="_blank">
- <img src="docs/images/vibe-coding.jpg" alt="Vibe Coding: Build & Deploy a Game on Kubernetes" width="240"  />
-</a>
-
-## ⚙️ Configuration <a id="configuration"></a>
-
-The Kubernetes MCP server can be configured using command line (CLI) arguments.
-
-You can run the CLI executable either by using `npx` or by downloading the [latest release binary](https://github.com/manusa/kubernetes-mcp-server/releases/latest).
-
-```shell
-# Run the Kubernetes MCP server using npx (in case you have npm installed)
-npx kubernetes-mcp-server@latest --help
-```
-
-```shell
-# Run the Kubernetes MCP server using the latest release binary
-./kubernetes-mcp-server --help
-```
-
-### Configuration Options
-
-| Option        | Description                                                                                                                                                                                                                                                                                   |
-|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `--sse-port`  | Starts the MCP server in Server-Sent Event (SSE) mode and listens on the specified port.                                                                                                                                                                                                      |
-| `--log-level` | Sets the logging level (values [from 0-9](https://github.com/kubernetes/community/blob/master/contributors/devel/sig-instrumentation/logging.md)). Similar to [kubectl logging levels](https://kubernetes.io/docs/reference/kubectl/quick-reference/#kubectl-output-verbosity-and-debugging). |
 
 ## 🧑‍💻 Development <a id="development"></a>
 
