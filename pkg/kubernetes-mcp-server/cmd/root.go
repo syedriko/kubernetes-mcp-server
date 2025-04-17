@@ -47,7 +47,8 @@ Kubernetes Model Context Protocol (MCP) server
 		}
 		mcpServer, err := mcp.NewSever()
 		if err != nil {
-			panic(err)
+			fmt.Printf("Failed to initialize MCP server: %v\n", err)
+			os.Exit(1)
 		}
 		defer mcpServer.Close()
 
