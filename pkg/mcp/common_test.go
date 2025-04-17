@@ -97,7 +97,7 @@ type mcpContext struct {
 	cancel        context.CancelFunc
 	mcpServer     *Server
 	mcpHttpServer *httptest.Server
-	mcpClient     *client.SSEMCPClient
+	mcpClient     *client.Client
 }
 
 func (c *mcpContext) beforeEach(t *testing.T) {
