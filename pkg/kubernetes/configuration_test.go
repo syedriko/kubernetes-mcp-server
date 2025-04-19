@@ -5,6 +5,7 @@ import (
 	"k8s.io/client-go/rest"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -67,6 +68,9 @@ func TestKubernetes_IsInCluster(t *testing.T) {
 
 func TestKubernetes_ResolveKubernetesConfigurations_Explicit(t *testing.T) {
 	t.Run("with missing file", func(t *testing.T) {
+		if runtime.GOOS != "linux" && runtime.GOOS != "darwin" {
+			t.Skip("Skipping test on non-linux platforms")
+		}
 		tempDir := t.TempDir()
 		k := Kubernetes{Kubeconfig: path.Join(tempDir, "config")}
 		err := resolveKubernetesConfigurations(&k)
