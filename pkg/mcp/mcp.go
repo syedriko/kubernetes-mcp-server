@@ -8,13 +8,19 @@ import (
 	"slices"
 )
 
-type Server struct {
-	server *server.MCPServer
-	k      *kubernetes.Kubernetes
+type Configuration struct {
+	Kubeconfig string
 }
 
-func NewSever() (*Server, error) {
+type Server struct {
+	configuration *Configuration
+	server        *server.MCPServer
+	k             *kubernetes.Kubernetes
+}
+
+func NewSever(configuration Configuration) (*Server, error) {
 	s := &Server{
+		configuration: &configuration,
 		server: server.NewMCPServer(
 			version.BinaryName,
 			version.Version,
@@ -32,7 +38,7 @@ func NewSever() (*Server, error) {
 }
 
 func (s *Server) reloadKubernetesClient() error {
-	k, err := kubernetes.NewKubernetes()
+	k, err := kubernetes.NewKubernetes(s.configuration.Kubeconfig)
 	if err != nil {
 		return err
 	}

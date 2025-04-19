@@ -3,7 +3,6 @@ package mcp
 import (
 	"context"
 	"fmt"
-	"github.com/manusa/kubernetes-mcp-server/pkg/kubernetes"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -16,18 +15,18 @@ func (s *Server) initConfiguration() []server.ServerTool {
 				"If set to true, keeps only the current-context and the relevant pieces of the configuration for that context. "+
 				"If set to false, all contexts, clusters, auth-infos, and users are returned in the configuration. "+
 				"(Optional, default true)")),
-		), configurationView},
+		), s.configurationView},
 	}
 	return tools
 }
 
-func configurationView(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+func (s *Server) configurationView(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	minify := true
 	minified := ctr.Params.Arguments["minified"]
 	if _, ok := minified.(bool); ok {
 		minify = minified.(bool)
 	}
-	ret, err := kubernetes.ConfigurationView(minify)
+	ret, err := s.k.ConfigurationView(minify)
 	if err != nil {
 		err = fmt.Errorf("failed to get configuration: %v", err)
 	}

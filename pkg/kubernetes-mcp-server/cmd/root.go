@@ -45,7 +45,9 @@ Kubernetes Model Context Protocol (MCP) server
 			fmt.Println(version.Version)
 			return
 		}
-		mcpServer, err := mcp.NewSever()
+		mcpServer, err := mcp.NewSever(mcp.Configuration{
+			Kubeconfig: viper.GetString("kubeconfig"),
+		})
 		if err != nil {
 			fmt.Printf("Failed to initialize MCP server: %v\n", err)
 			os.Exit(1)
@@ -73,6 +75,7 @@ func init() {
 	rootCmd.Flags().IntP("log-level", "", 0, "Set the log level (from 0 to 9)")
 	rootCmd.Flags().IntP("sse-port", "", 0, "Start a SSE server on the specified port")
 	rootCmd.Flags().StringP("sse-base-url", "", "", "SSE public base URL to use when sending the endpoint message (e.g. https://example.com)")
+	rootCmd.Flags().StringP("kubeconfig", "", "", "Path to the kubeconfig file to use for authentication")
 	_ = viper.BindPFlags(rootCmd.Flags())
 }
 

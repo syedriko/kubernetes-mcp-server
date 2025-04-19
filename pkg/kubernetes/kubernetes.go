@@ -12,27 +12,16 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
 )
-
-// InClusterConfig is a variable that holds the function to get the in-cluster config
-// Exposed for testing
-var InClusterConfig = func() (*rest.Config, error) {
-	// TODO use kubernetes.default.svc instead of resolved server
-	// Currently running into: `http: server gave HTTP response to HTTPS client`
-	inClusterConfig, err := rest.InClusterConfig()
-	if inClusterConfig != nil {
-		inClusterConfig.Host = "https://kubernetes.default.svc"
-	}
-	return inClusterConfig, err
-}
 
 type CloseWatchKubeConfig func() error
 
 type Kubernetes struct {
+	// Kubeconfig path override
+	Kubeconfig                  string
 	cfg                         *rest.Config
-	kubeConfigFiles             []string
+	clientCmdConfig             clientcmd.ClientConfig
 	CloseWatchKubeConfig        CloseWatchKubeConfig
 	scheme                      *runtime.Scheme
 	parameterCodec              runtime.ParameterCodec
@@ -42,14 +31,14 @@ type Kubernetes struct {
 	dynamicClient               *dynamic.DynamicClient
 }
 
-func NewKubernetes() (*Kubernetes, error) {
-	k8s := &Kubernetes{}
-	var err error
-	k8s.cfg, err = resolveClientConfig()
-	if err != nil {
+func NewKubernetes(kubeconfig string) (*Kubernetes, error) {
+	k8s := &Kubernetes{
+		Kubeconfig: kubeconfig,
+	}
+	if err := resolveKubernetesConfigurations(k8s); err != nil {
 		return nil, err
 	}
-	k8s.kubeConfigFiles = resolveConfig().ConfigAccess().GetLoadingPrecedence()
+	var err error
 	k8s.clientSet, err = kubernetes.NewForConfig(k8s.cfg)
 	if err != nil {
 		return nil, err
@@ -72,14 +61,18 @@ func NewKubernetes() (*Kubernetes, error) {
 }
 
 func (k *Kubernetes) WatchKubeConfig(onKubeConfigChange func() error) {
-	if len(k.kubeConfigFiles) == 0 {
+	if k.clientCmdConfig == nil {
+		return
+	}
+	kubeConfigFiles := k.clientCmdConfig.ConfigAccess().GetLoadingPrecedence()
+	if len(kubeConfigFiles) == 0 {
 		return
 	}
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return
 	}
-	for _, file := range k.kubeConfigFiles {
+	for _, file := range kubeConfigFiles {
 		_ = watcher.Add(file)
 	}
 	go func() {
@@ -131,35 +124,16 @@ func marshal(v any) (string, error) {
 	return string(ret), nil
 }
 
-func resolveConfig() clientcmd.ClientConfig {
-	pathOptions := clientcmd.NewDefaultPathOptions()
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: pathOptions.GetDefaultFilename()},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}})
-}
-
-func resolveClientConfig() (*rest.Config, error) {
-	inClusterConfig, err := InClusterConfig()
-	if err == nil && inClusterConfig != nil {
-		return inClusterConfig, nil
-	}
-	cfg, err := resolveConfig().ClientConfig()
-	if cfg != nil && cfg.UserAgent == "" {
-		cfg.UserAgent = rest.DefaultKubernetesUserAgent()
-	}
-	return cfg, err
-}
-
-func configuredNamespace() string {
-	if ns, _, nsErr := resolveConfig().Namespace(); nsErr == nil {
+func (k *Kubernetes) configuredNamespace() string {
+	if ns, _, nsErr := k.clientCmdConfig.Namespace(); nsErr == nil {
 		return ns
 	}
 	return ""
 }
 
-func namespaceOrDefault(namespace string) string {
+func (k *Kubernetes) namespaceOrDefault(namespace string) string {
 	if namespace == "" {
-		return configuredNamespace()
+		return k.configuredNamespace()
 	}
 	return namespace
 }
