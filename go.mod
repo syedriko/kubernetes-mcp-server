@@ -10,7 +10,7 @@ require (
 	github.com/spf13/viper v1.20.1
 	golang.org/x/net v0.39.0
 	k8s.io/api v0.33.0
-	k8s.io/apiextensions-apiserver v0.32.3
+	k8s.io/apiextensions-apiserver v0.33.0
 	k8s.io/apimachinery v0.33.0
 	k8s.io/client-go v0.33.0
 	k8s.io/klog/v2 v2.130.1
