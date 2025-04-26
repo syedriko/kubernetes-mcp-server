@@ -116,11 +116,16 @@ In this demo, I walk you through the process of _Vibe Coding_ a simple game usin
 
 The Kubernetes MCP server can be configured using command line (CLI) arguments.
 
-You can run the CLI executable either by using `npx` or by downloading the [latest release binary](https://github.com/manusa/kubernetes-mcp-server/releases/latest).
+You can run the CLI executable either by using `npx`, `uvx`, or by downloading the [latest release binary](https://github.com/manusa/kubernetes-mcp-server/releases/latest).
 
 ```shell
-# Run the Kubernetes MCP server using npx (in case you have npm installed)
+# Run the Kubernetes MCP server using npx (in case you have npm and node installed)
 npx kubernetes-mcp-server@latest --help
+```
+
+```shell
+# Run the Kubernetes MCP server using uvx (in case you have uv and python installed)
+uvx kubernetes-mcp-server@latest --help
 ```
 
 ```shell
