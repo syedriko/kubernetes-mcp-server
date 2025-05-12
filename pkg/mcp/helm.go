@@ -29,7 +29,7 @@ func (s *Server) helmList(_ context.Context, ctr mcp.CallToolRequest) (*mcp.Call
 	if v, ok := ctr.Params.Arguments["namespace"].(string); ok {
 		namespace = v
 	}
-	ret, err := s.k.Helm.ReleasesList(namespace, allNamespaces)
+	ret, err := s.k.Helm.List(namespace, allNamespaces)
 	if err != nil {
 		return NewTextResult("", fmt.Errorf("failed to list helm releases in namespace '%s': %w", namespace, err)), nil
 	}

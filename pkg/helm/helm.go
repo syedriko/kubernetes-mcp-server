@@ -26,8 +26,8 @@ func NewHelm(kubernetes Kubernetes, namespace string) *Helm {
 	return &Helm{kubernetes: kubernetes}
 }
 
-// ReleasesList lists all the releases for the specified namespace (or current namespace if). Or allNamespaces is true, it lists all releases across all namespaces.
-func (h *Helm) ReleasesList(namespace string, allNamespaces bool) (string, error) {
+// List lists all the releases for the specified namespace (or current namespace if). Or allNamespaces is true, it lists all releases across all namespaces.
+func (h *Helm) List(namespace string, allNamespaces bool) (string, error) {
 	cfg := new(action.Configuration)
 	applicableNamespace := ""
 	if !allNamespaces {

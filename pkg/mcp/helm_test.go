@@ -26,7 +26,7 @@ func TestHelmList(t *testing.T) {
 				t.Fatalf("unexpected result %v", toolResult.Content[0].(mcp.TextContent).Text)
 			}
 		})
-		_, err = kc.CoreV1().Secrets("default").Create(c.ctx, &corev1.Secret{
+		_, _ = kc.CoreV1().Secrets("default").Create(c.ctx, &corev1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:   "release-to-list",
 				Labels: map[string]string{"owner": "helm"},
