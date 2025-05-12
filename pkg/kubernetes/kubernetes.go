@@ -61,7 +61,7 @@ func NewKubernetes(kubeconfig string) (*Kubernetes, error) {
 		return nil, err
 	}
 	k8s.parameterCodec = runtime.NewParameterCodec(k8s.scheme)
-	k8s.Helm = helm.NewHelm(k8s, "TODO")
+	k8s.Helm = helm.NewHelm(k8s)
 	return k8s, nil
 }
 

@@ -54,6 +54,7 @@ func TestTools(t *testing.T) {
 	expectedNames := []string{
 		"configuration_view",
 		"events_list",
+		"helm_install",
 		"helm_list",
 		"namespaces_list",
 		"pods_list",

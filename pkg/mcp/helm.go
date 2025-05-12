@@ -8,16 +8,45 @@ import (
 )
 
 func (s *Server) initHelm() []server.ServerTool {
-	rets := make([]server.ServerTool, 0)
-	rets = append(rets, server.ServerTool{
-		Tool: mcp.NewTool("helm_list",
-			mcp.WithDescription("List all of the Helm releases in the current or provided namespace (or in all namespaces if specified)"),
+	return []server.ServerTool{
+		{mcp.NewTool("helm_install",
+			mcp.WithDescription("Install a Helm chart in the current or provided namespace"),
+			mcp.WithString("chart", mcp.Description("Chart reference to install (for example: stable/grafana, oci://ghcr.io/nginxinc/charts/nginx-ingress)"), mcp.Required()),
+			mcp.WithObject("values", mcp.Description("Values to pass to the Helm chart (Optional)")),
+			mcp.WithString("name", mcp.Description("Name of the Helm release (Optional, random name if not provided)")),
+			mcp.WithString("namespace", mcp.Description("Namespace to install the Helm chart in (Optional, current namespace if not provided)")),
+		), s.helmInstall},
+		{mcp.NewTool("helm_list",
+			mcp.WithDescription("List all the Helm releases in the current or provided namespace (or in all namespaces if specified)"),
 			mcp.WithString("namespace", mcp.Description("Namespace to list Helm releases from (Optional, all namespaces if not provided)")),
 			mcp.WithBoolean("all_namespaces", mcp.Description("If true, lists all Helm releases in all namespaces ignoring the namespace argument (Optional)")),
-		),
-		Handler: s.helmList,
-	})
-	return rets
+		), s.helmList},
+	}
+}
+
+func (s *Server) helmInstall(ctx context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	var chart string
+	ok := false
+	if chart, ok = ctr.Params.Arguments["chart"].(string); !ok {
+		return NewTextResult("", fmt.Errorf("failed to install helm chart, missing argument chart")), nil
+	}
+	values := map[string]interface{}{}
+	if v, ok := ctr.Params.Arguments["values"].(map[string]interface{}); ok {
+		values = v
+	}
+	name := ""
+	if v, ok := ctr.Params.Arguments["name"].(string); ok {
+		name = v
+	}
+	namespace := ""
+	if v, ok := ctr.Params.Arguments["namespace"].(string); ok {
+		namespace = v
+	}
+	ret, err := s.k.Helm.Install(ctx, chart, values, name, namespace)
+	if err != nil {
+		return NewTextResult("", fmt.Errorf("failed to install helm chart '%s': %w", chart, err)), nil
+	}
+	return NewTextResult(ret, err), nil
 }
 
 func (s *Server) helmList(_ context.Context, ctr mcp.CallToolRequest) (*mcp.CallToolResult, error) {

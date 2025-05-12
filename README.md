@@ -29,6 +29,7 @@ A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.m
 - **✅ Events**: View Kubernetes events in all namespaces or in a specific namespace.
 - **✅ Projects**: List OpenShift Projects.
 - **☸️ Helm**:
+  - **Install** a Helm chart in the current or provided namespace.
   - **List** Helm releases in all namespaces or in a specific namespace.
 
 Unlike other Kubernetes MCP server implementations, this **IS NOT** just a wrapper around `kubectl` or `helm` command-line tools.
@@ -162,6 +163,37 @@ List all the Kubernetes events in the current cluster from all namespaces
 **Parameters:**
 - `namespace` (`string`, optional)
   - Namespace to retrieve the events from. If not provided, will list events from all namespaces
+
+### `helm_install`
+
+Install a Helm chart in the current or provided namespace with the provided name and chart
+
+**Parameters:**
+- `chart` (`string`, required)
+  - Name of the Helm chart to install
+  - Can be a local path or a remote URL
+  - Example: `./my-chart.tgz` or `https://example.com/my-chart.tgz`
+- `values` (`object`, optional)
+  - Values to pass to the Helm chart
+  - Example: `{"key": "value"}`
+- `name` (`string`, optional)
+  - Name of the Helm release
+  - Random name if not provided
+- `namespace` (`string`, optional)
+  - Namespace to install the Helm chart in
+  - If not provided, will use the configured namespace
+
+### `helm_list`
+
+List all the Helm releases in the current or provided namespace (or in all namespaces if specified)
+
+**Parameters:**
+- `namespace` (`string`, optional)
+  - Namespace to list the Helm releases from
+  - If not provided, will use the configured namespace
+- `all_namespaces` (`boolean`, optional)
+  - If `true`, will list Helm releases from all namespaces
+  - If `false`, will list Helm releases from the specified namespace
 
 ### `namespaces_list`
 
