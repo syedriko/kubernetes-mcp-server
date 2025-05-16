@@ -93,8 +93,8 @@ func TestMain(m *testing.M) {
 
 type mcpContext struct {
 	profile       Profile
-	before        *func(*mcpContext)
-	after         *func(*mcpContext)
+	before        func(*mcpContext)
+	after         func(*mcpContext)
 	ctx           context.Context
 	tempDir       string
 	cancel        context.CancelFunc
@@ -108,8 +108,11 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 	c.ctx, c.cancel = context.WithCancel(t.Context())
 	c.tempDir = t.TempDir()
 	c.withKubeConfig(nil)
+	if c.profile == nil {
+		c.profile = &FullProfile{}
+	}
 	if c.before != nil {
-		(*c.before)(c)
+		c.before(c)
 	}
 	if c.mcpServer, err = NewSever(Configuration{Profile: c.profile}); err != nil {
 		t.Fatal(err)
@@ -136,7 +139,7 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 
 func (c *mcpContext) afterEach() {
 	if c.after != nil {
-		(*c.after)(c)
+		c.after(c)
 	}
 	c.cancel()
 	c.mcpServer.Close()
@@ -192,8 +195,8 @@ func (c *mcpContext) withEnvTest() {
 }
 
 // inOpenShift sets up the kubernetes environment to seem to be running OpenShift
-func (c *mcpContext) inOpenShift() func() {
-	c.withKubeConfig(envTestRestConfig)
+func inOpenShift(c *mcpContext) {
+	c.withEnvTest()
 	crdTemplate := `
           {
             "apiVersion": "apiextensions.k8s.io/v1",
@@ -209,14 +212,16 @@ func (c *mcpContext) inOpenShift() func() {
               "names": {"plural": "%s","singular": "%s","kind": "%s"}
             }
           }`
-	removeProjects := c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
+	c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
 		"Cluster", "projects", "project", "Project"))
-	removeRoutes := c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
+	c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
 		"Namespaced", "routes", "route", "Route"))
-	return func() {
-		removeProjects()
-		removeRoutes()
-	}
+}
+
+// inOpenShiftClear clears the kubernetes environment so it no longer seems to be running OpenShift
+func inOpenShiftClear(c *mcpContext) {
+	c.crdDelete("projects.project.openshift.io")
+	c.crdDelete("routes.route.openshift.io")
 }
 
 // newKubernetesClient creates a new Kubernetes client with the envTest kubeconfig
@@ -241,8 +246,8 @@ func (c *mcpContext) newApiExtensionsClient() *apiextensionsv1.ApiextensionsV1Cl
 	return apiextensionsv1.NewForConfigOrDie(envTestRestConfig)
 }
 
-// crdApply creates a CRD from the provided resource string and waits for it to be established, returns a cleanup function
-func (c *mcpContext) crdApply(resource string) func() {
+// crdApply creates a CRD from the provided resource string and waits for it to be established
+func (c *mcpContext) crdApply(resource string) {
 	apiExtensionsV1Client := c.newApiExtensionsClient()
 	var crd = &apiextensionsv1spec.CustomResourceDefinition{}
 	err := json.Unmarshal([]byte(resource), crd)
@@ -251,21 +256,24 @@ func (c *mcpContext) crdApply(resource string) func() {
 		panic(fmt.Errorf("failed to create CRD %v", err))
 	}
 	c.crdWaitUntilReady(crd.Name)
-	return func() {
-		err = apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, crd.Name, metav1.DeleteOptions{
-			GracePeriodSeconds: ptr.To(int64(0)),
-		})
-		iteration := 0
-		for iteration < 10 {
-			if _, derr := apiExtensionsV1Client.CustomResourceDefinitions().Get(c.ctx, crd.Name, metav1.GetOptions{}); derr != nil {
-				break
-			}
-			time.Sleep(50 * time.Millisecond)
-			iteration++
+}
+
+// crdDelete deletes a CRD by name and waits for it to be removed
+func (c *mcpContext) crdDelete(name string) {
+	apiExtensionsV1Client := c.newApiExtensionsClient()
+	err := apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, name, metav1.DeleteOptions{
+		GracePeriodSeconds: ptr.To(int64(0)),
+	})
+	iteration := 0
+	for iteration < 100 {
+		if _, derr := apiExtensionsV1Client.CustomResourceDefinitions().Get(c.ctx, name, metav1.GetOptions{}); derr != nil {
+			break
 		}
-		if err != nil {
-			panic(fmt.Errorf("failed to delete CRD %v", err))
-		}
+		time.Sleep(5 * time.Millisecond)
+		iteration++
+	}
+	if err != nil {
+		panic(fmt.Errorf("failed to delete CRD %v", err))
 	}
 }
 

@@ -418,9 +418,7 @@ func TestPodsDelete(t *testing.T) {
 }
 
 func TestPodsDeleteInOpenShift(t *testing.T) {
-	testCase(t, func(c *mcpContext) {
-		// Managed Pod in OpenShift
-		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
+	testCaseWithContext(t, &mcpContext{before: inOpenShift, after: inOpenShiftClear}, func(c *mcpContext) {
 		managedLabels := map[string]string{
 			"app.kubernetes.io/managed-by": "kubernetes-mcp-server",
 			"app.kubernetes.io/name":       "a-manged-pod-to-delete",
@@ -710,8 +708,7 @@ func TestPodsRun(t *testing.T) {
 }
 
 func TestPodsRunInOpenShift(t *testing.T) {
-	testCase(t, func(c *mcpContext) {
-		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
+	testCaseWithContext(t, &mcpContext{before: inOpenShift, after: inOpenShiftClear}, func(c *mcpContext) {
 		t.Run("pods_run with image, namespace, and port returns route with port", func(t *testing.T) {
 			podsRunInOpenShift, err := c.callTool("pods_run", map[string]interface{}{"image": "nginx", "port": 80})
 			if err != nil {

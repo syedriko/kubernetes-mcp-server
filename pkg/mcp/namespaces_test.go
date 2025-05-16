@@ -47,9 +47,7 @@ func TestNamespacesList(t *testing.T) {
 }
 
 func TestProjectsListInOpenShift(t *testing.T) {
-	testCase(t, func(c *mcpContext) {
-		defer c.inOpenShift()() // n.b. two sets of parentheses to invoke the first function
-		c.mcpServer.server.AddTools(c.mcpServer.initNamespaces()...)
+	testCaseWithContext(t, &mcpContext{before: inOpenShift, after: inOpenShiftClear}, func(c *mcpContext) {
 		dynamicClient := dynamic.NewForConfigOrDie(envTestRestConfig)
 		_, _ = dynamicClient.Resource(schema.GroupVersionResource{Group: "project.openshift.io", Version: "v1", Resource: "projects"}).
 			Create(c.ctx, &unstructured.Unstructured{Object: map[string]interface{}{

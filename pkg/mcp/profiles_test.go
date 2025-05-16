@@ -52,17 +52,10 @@ func TestFullProfileTools(t *testing.T) {
 }
 
 func TestFullProfileToolsInOpenShift(t *testing.T) {
-	var after func(c *mcpContext)
-	before := func(c *mcpContext) {
-		cleanCrds := c.inOpenShift()
-		after = func(_ *mcpContext) {
-			cleanCrds()
-		}
-	}
 	mcpCtx := &mcpContext{
 		profile: &FullProfile{},
-		before:  &before,
-		after:   &after,
+		before:  inOpenShift,
+		after:   inOpenShiftClear,
 	}
 	testCaseWithContext(t, mcpCtx, func(c *mcpContext) {
 		tools, err := c.mcpClient.ListTools(c.ctx, mcp.ListToolsRequest{})
