@@ -92,6 +92,9 @@ func TestMain(m *testing.M) {
 }
 
 type mcpContext struct {
+	profile       Profile
+	before        *func(*mcpContext)
+	after         *func(*mcpContext)
 	ctx           context.Context
 	tempDir       string
 	cancel        context.CancelFunc
@@ -102,10 +105,13 @@ type mcpContext struct {
 
 func (c *mcpContext) beforeEach(t *testing.T) {
 	var err error
-	c.ctx, c.cancel = context.WithCancel(context.Background())
+	c.ctx, c.cancel = context.WithCancel(t.Context())
 	c.tempDir = t.TempDir()
 	c.withKubeConfig(nil)
-	if c.mcpServer, err = NewSever(Configuration{Profile: &FullProfile{}}); err != nil {
+	if c.before != nil {
+		(*c.before)(c)
+	}
+	if c.mcpServer, err = NewSever(Configuration{Profile: c.profile}); err != nil {
 		t.Fatal(err)
 		return
 	}
@@ -129,6 +135,9 @@ func (c *mcpContext) beforeEach(t *testing.T) {
 }
 
 func (c *mcpContext) afterEach() {
+	if c.after != nil {
+		(*c.after)(c)
+	}
 	c.cancel()
 	c.mcpServer.Close()
 	_ = c.mcpClient.Close()
@@ -136,7 +145,10 @@ func (c *mcpContext) afterEach() {
 }
 
 func testCase(t *testing.T, test func(c *mcpContext)) {
-	mcpCtx := &mcpContext{}
+	testCaseWithContext(t, &mcpContext{profile: &FullProfile{}}, test)
+}
+
+func testCaseWithContext(t *testing.T, mcpCtx *mcpContext, test func(c *mcpContext)) {
 	mcpCtx.beforeEach(t)
 	defer mcpCtx.afterEach()
 	test(mcpCtx)
