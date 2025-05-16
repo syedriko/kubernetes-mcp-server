@@ -7,7 +7,9 @@ import (
 	"github.com/mark3labs/mcp-go/client"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/pkg/errors"
 	"github.com/spf13/afero"
+	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1spec "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -212,16 +214,28 @@ func inOpenShift(c *mcpContext) {
               "names": {"plural": "%s","singular": "%s","kind": "%s"}
             }
           }`
-	c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
-		"Cluster", "projects", "project", "Project"))
-	c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
-		"Namespaced", "routes", "route", "Route"))
+	tasks, _ := errgroup.WithContext(c.ctx)
+	tasks.Go(func() error {
+		return c.crdApply(fmt.Sprintf(crdTemplate, "projects.project.openshift.io", "project.openshift.io",
+			"Cluster", "projects", "project", "Project"))
+	})
+	tasks.Go(func() error {
+		return c.crdApply(fmt.Sprintf(crdTemplate, "routes.route.openshift.io", "route.openshift.io",
+			"Namespaced", "routes", "route", "Route"))
+	})
+	if err := tasks.Wait(); err != nil {
+		panic(err)
+	}
 }
 
 // inOpenShiftClear clears the kubernetes environment so it no longer seems to be running OpenShift
 func inOpenShiftClear(c *mcpContext) {
-	c.crdDelete("projects.project.openshift.io")
-	c.crdDelete("routes.route.openshift.io")
+	tasks, _ := errgroup.WithContext(c.ctx)
+	tasks.Go(func() error { return c.crdDelete("projects.project.openshift.io") })
+	tasks.Go(func() error { return c.crdDelete("routes.route.openshift.io") })
+	if err := tasks.Wait(); err != nil {
+		panic(err)
+	}
 }
 
 // newKubernetesClient creates a new Kubernetes client with the envTest kubeconfig
@@ -247,19 +261,20 @@ func (c *mcpContext) newApiExtensionsClient() *apiextensionsv1.ApiextensionsV1Cl
 }
 
 // crdApply creates a CRD from the provided resource string and waits for it to be established
-func (c *mcpContext) crdApply(resource string) {
+func (c *mcpContext) crdApply(resource string) error {
 	apiExtensionsV1Client := c.newApiExtensionsClient()
 	var crd = &apiextensionsv1spec.CustomResourceDefinition{}
 	err := json.Unmarshal([]byte(resource), crd)
 	_, err = apiExtensionsV1Client.CustomResourceDefinitions().Create(c.ctx, crd, metav1.CreateOptions{})
 	if err != nil {
-		panic(fmt.Errorf("failed to create CRD %v", err))
+		return fmt.Errorf("failed to create CRD %v", err)
 	}
 	c.crdWaitUntilReady(crd.Name)
+	return nil
 }
 
 // crdDelete deletes a CRD by name and waits for it to be removed
-func (c *mcpContext) crdDelete(name string) {
+func (c *mcpContext) crdDelete(name string) error {
 	apiExtensionsV1Client := c.newApiExtensionsClient()
 	err := apiExtensionsV1Client.CustomResourceDefinitions().Delete(c.ctx, name, metav1.DeleteOptions{
 		GracePeriodSeconds: ptr.To(int64(0)),
@@ -273,8 +288,9 @@ func (c *mcpContext) crdDelete(name string) {
 		iteration++
 	}
 	if err != nil {
-		panic(fmt.Errorf("failed to delete CRD %v", err))
+		return errors.Wrap(err, "failed to delete CRD")
 	}
+	return nil
 }
 
 // crdWaitUntilReady waits for a CRD to be established
