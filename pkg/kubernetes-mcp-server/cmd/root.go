@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog/v2/textlogger"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var rootCmd = &cobra.Command{
@@ -42,7 +43,7 @@ Kubernetes Model Context Protocol (MCP) server
 		initLogging()
 		profile := mcp.ProfileFromString(viper.GetString("profile"))
 		if profile == nil {
-			fmt.Printf("Invalid profile name: %s, valid names are: %s\n", viper.GetString("profile"), mcp.ProfileNames)
+			fmt.Printf("Invalid profile name: %s, valid names are: %s\n", viper.GetString("profile"), strings.Join(mcp.ProfileNames, ", "))
 			os.Exit(1)
 		}
 		klog.V(1).Infof("Starting kubernetes-mcp-server with profile: %s", profile.GetName())
@@ -121,6 +122,6 @@ func init() {
 	rootCmd.Flags().IntP("sse-port", "", 0, "Start a SSE server on the specified port")
 	rootCmd.Flags().StringP("sse-base-url", "", "", "SSE public base URL to use when sending the endpoint message (e.g. https://example.com)")
 	rootCmd.Flags().StringP("kubeconfig", "", "", "Path to the kubeconfig file to use for authentication")
-	rootCmd.Flags().Var(&profileFlag{&mcp.FullProfile{}}, "profile", "MCP profile to use")
+	rootCmd.Flags().String("profile", "full", "MCP profile to use (one of: "+strings.Join(mcp.ProfileNames, ", ")+")")
 	_ = viper.BindPFlags(rootCmd.Flags())
 }
