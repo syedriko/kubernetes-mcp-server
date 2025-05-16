@@ -3,6 +3,7 @@ package cmd
 import (
 	"io"
 	"os"
+	"strings"
 	"testing"
 )
 
@@ -24,6 +25,13 @@ func TestVersion(t *testing.T) {
 	version, err := captureOutput(rootCmd.Execute)
 	if version != "0.0.0\n" {
 		t.Fatalf("Expected version 0.0.0, got %s %v", version, err)
-		return
+	}
+}
+
+func TestDefaultProfile(t *testing.T) {
+	rootCmd.SetArgs([]string{"--version", "--log-level=1"})
+	out, err := captureOutput(rootCmd.Execute)
+	if !strings.Contains(out, "Starting kubernetes-mcp-server with profile: full") {
+		t.Fatalf("Expected profile 'full', got %s %v", out, err)
 	}
 }
