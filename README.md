@@ -116,6 +116,14 @@ In this demo, I walk you through the process of _Vibe Coding_ a simple game usin
  <img src="docs/images/vibe-coding.jpg" alt="Vibe Coding: Build & Deploy a Game on Kubernetes" width="240"  />
 </a>
 
+### Supercharge GitHub Copilot with Kubernetes MCP Server in VS Code - One-Click Setup!
+
+In this demo, I'll show you how to set up Kubernetes MCP server in VS code just by clicking a link.
+
+<a href="https://youtu.be/AI4ljYMkgtA" target="_blank">
+ <img src="docs/images/kubernetes-mcp-server-github-copilot.jpg" alt="Supercharge GitHub Copilot with Kubernetes MCP Server in VS Code - One-Click Setup!" width="240"  />
+</a>
+
 ## ⚙️ Configuration <a id="configuration"></a>
 
 The Kubernetes MCP server can be configured using command line (CLI) arguments.
