@@ -35,9 +35,14 @@ A powerful and flexible Kubernetes [Model Context Protocol (MCP)](https://blog.m
   - **Uninstall** a Helm release in the current or provided namespace.
 
 Unlike other Kubernetes MCP server implementations, this **IS NOT** just a wrapper around `kubectl` or `helm` command-line tools.
+It is a **Go-based native implementation** that interacts directly with the Kubernetes API server.
 
 There is **NO NEED** for external dependencies or tools to be installed on the system.
-If you're using the native binaries you don't even need to have Node or Python installed on your system.
+If you're using the native binaries you don't need to have Node or Python installed on your system.
+
+- ✅ Lightweight: The server is distributed as a single native binary for Linux, macOS, and Windows.
+- ✅ High-Performance / Low-Latency: Directly interacts with the Kubernetes API server without the overhead of calling and waiting for external commands.
+- ✅ Cross-Platform: Available as a native binary for Linux, macOS, and Windows, as well as an npm package, a Python package, and container/Docker image.
 
 ## 🚀 Getting Started <a id="getting-started"></a>
 
