@@ -40,9 +40,11 @@ It is a **Go-based native implementation** that interacts directly with the Kube
 There is **NO NEED** for external dependencies or tools to be installed on the system.
 If you're using the native binaries you don't need to have Node or Python installed on your system.
 
-- ✅ Lightweight: The server is distributed as a single native binary for Linux, macOS, and Windows.
-- ✅ High-Performance / Low-Latency: Directly interacts with the Kubernetes API server without the overhead of calling and waiting for external commands.
-- ✅ Cross-Platform: Available as a native binary for Linux, macOS, and Windows, as well as an npm package, a Python package, and container/Docker image.
+- **✅ Lightweight**: The server is distributed as a single native binary for Linux, macOS, and Windows.
+- **✅ High-Performance / Low-Latency**: Directly interacts with the Kubernetes API server without the overhead of calling and waiting for external commands.
+- **✅ Cross-Platform**: Available as a native binary for Linux, macOS, and Windows, as well as an npm package, a Python package, and container/Docker image.
+- **✅ Configurable**: Supports [command-line arguments](#configuration)  to configure the server behavior.
+- **✅ Well tested**: The server has an extensive test suite to ensure its reliability and correctness across different Kubernetes environments.
 
 ## 🚀 Getting Started <a id="getting-started"></a>
 
