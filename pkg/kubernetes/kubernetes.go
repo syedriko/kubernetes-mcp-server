@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"context"
 	"github.com/fsnotify/fsnotify"
 	"github.com/manusa/kubernetes-mcp-server/pkg/helm"
 	v1 "k8s.io/api/core/v1"
@@ -15,7 +16,13 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/restmapper"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"sigs.k8s.io/yaml"
+)
+
+const (
+	AuthorizationHeader            = "Kubernetes-Authorization"
+	AuthorizationBearerTokenHeader = "kubernetes-authorization-bearer-token"
 )
 
 type CloseWatchKubeConfig func() error
@@ -42,6 +49,10 @@ func NewKubernetes(kubeconfig string) (*Kubernetes, error) {
 	if err := resolveKubernetesConfigurations(k8s); err != nil {
 		return nil, err
 	}
+	// TODO: Won't work because not all client-go clients use the shared context (e.g. discovery client uses context.TODO())
+	//k8s.cfg.Wrap(func(original http.RoundTripper) http.RoundTripper {
+	//	return &impersonateRoundTripper{original}
+	//})
 	var err error
 	k8s.clientSet, err = kubernetes.NewForConfig(k8s.cfg)
 	if err != nil {
@@ -52,7 +63,7 @@ func NewKubernetes(kubeconfig string) (*Kubernetes, error) {
 		return nil, err
 	}
 	k8s.discoveryClient = memory.NewMemCacheClient(discoveryClient)
-	k8s.deferredDiscoveryRESTMapper = restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(k8s.discoveryClient))
+	k8s.deferredDiscoveryRESTMapper = restmapper.NewDeferredDiscoveryRESTMapper(k8s.discoveryClient)
 	k8s.dynamicClient, err = dynamic.NewForConfig(k8s.cfg)
 	if err != nil {
 		return nil, err
@@ -114,6 +125,50 @@ func (k *Kubernetes) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, er
 
 func (k *Kubernetes) ToRESTMapper() (meta.RESTMapper, error) {
 	return k.deferredDiscoveryRESTMapper, nil
+}
+
+func (k *Kubernetes) Derived(ctx context.Context) *Kubernetes {
+	bearerToken, ok := ctx.Value(AuthorizationBearerTokenHeader).(string)
+	if !ok {
+		return k
+	}
+	derivedCfg := rest.CopyConfig(k.cfg)
+	derivedCfg.BearerToken = bearerToken
+	derivedCfg.BearerTokenFile = ""
+	derivedCfg.Username = ""
+	derivedCfg.Password = ""
+	derivedCfg.AuthProvider = nil
+	derivedCfg.AuthConfigPersister = nil
+	derivedCfg.ExecProvider = nil
+	derivedCfg.Impersonate = rest.ImpersonationConfig{}
+	clientCmdApiConfig, err := k.clientCmdConfig.RawConfig()
+	if err != nil {
+		return k
+	}
+	clientCmdApiConfig.AuthInfos = make(map[string]*clientcmdapi.AuthInfo)
+	derived := &Kubernetes{
+		Kubeconfig:      k.Kubeconfig,
+		clientCmdConfig: clientcmd.NewDefaultClientConfig(clientCmdApiConfig, nil),
+		cfg:             derivedCfg,
+		scheme:          k.scheme,
+		parameterCodec:  k.parameterCodec,
+	}
+	derived.clientSet, err = kubernetes.NewForConfig(derived.cfg)
+	if err != nil {
+		return k
+	}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(derived.cfg)
+	if err != nil {
+		return k
+	}
+	derived.discoveryClient = memory.NewMemCacheClient(discoveryClient)
+	derived.deferredDiscoveryRESTMapper = restmapper.NewDeferredDiscoveryRESTMapper(derived.discoveryClient)
+	derived.dynamicClient, err = dynamic.NewForConfig(derived.cfg)
+	if err != nil {
+		return k
+	}
+	derived.Helm = helm.NewHelm(derived)
+	return derived
 }
 
 func marshal(v any) (string, error) {
