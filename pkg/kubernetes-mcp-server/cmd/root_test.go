@@ -48,7 +48,7 @@ func TestListOutput(t *testing.T) {
 		rootCmd.ResetFlags()
 		flagInit()
 		out, err := captureOutput(rootCmd.Execute)
-		if !strings.Contains(out, "Output format for resource lists (one of: yaml, table)") {
+		if !strings.Contains(out, "Output format for resource list operations (one of: yaml, table)") {
 			t.Fatalf("Expected all available outputs, got %s %v", out, err)
 		}
 	})
