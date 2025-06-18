@@ -49,7 +49,7 @@ func (k *Kubernetes) PodsGet(ctx context.Context, namespace, name string) (*unst
 
 func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (string, error) {
 	namespace = k.NamespaceOrDefault(namespace)
-	pod, err := k.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	pod, err := k.manager.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -62,18 +62,18 @@ func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (st
 
 	// Delete managed service
 	if isManaged {
-		if sl, _ := k.clientSet.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{
+		if sl, _ := k.manager.clientSet.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: managedLabelSelector.String(),
 		}); sl != nil {
 			for _, svc := range sl.Items {
-				_ = k.clientSet.CoreV1().Services(namespace).Delete(ctx, svc.Name, metav1.DeleteOptions{})
+				_ = k.manager.clientSet.CoreV1().Services(namespace).Delete(ctx, svc.Name, metav1.DeleteOptions{})
 			}
 		}
 	}
 
 	// Delete managed Route
 	if isManaged && k.supportsGroupVersion("route.openshift.io/v1") {
-		routeResources := k.dynamicClient.
+		routeResources := k.manager.dynamicClient.
 			Resource(schema.GroupVersionResource{Group: "route.openshift.io", Version: "v1", Resource: "routes"}).
 			Namespace(namespace)
 		if rl, _ := routeResources.List(ctx, metav1.ListOptions{
@@ -86,12 +86,12 @@ func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (st
 
 	}
 	return "Pod deleted successfully",
-		k.clientSet.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		k.manager.clientSet.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
 }
 
 func (k *Kubernetes) PodsLog(ctx context.Context, namespace, name, container string) (string, error) {
 	tailLines := int64(256)
-	req := k.clientSet.CoreV1().Pods(k.NamespaceOrDefault(namespace)).GetLogs(name, &v1.PodLogOptions{
+	req := k.manager.clientSet.CoreV1().Pods(k.NamespaceOrDefault(namespace)).GetLogs(name, &v1.PodLogOptions{
 		TailLines: &tailLines,
 		Container: container,
 	})
@@ -197,7 +197,7 @@ func (k *Kubernetes) PodsTop(ctx context.Context, options PodsTopOptions) (*metr
 	} else {
 		namespace = k.NamespaceOrDefault(namespace)
 	}
-	metricsClient, err := metricsclientset.NewForConfig(k.cfg)
+	metricsClient, err := metricsclientset.NewForConfig(k.manager.cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metrics client: %w", err)
 	}
@@ -220,7 +220,7 @@ func (k *Kubernetes) PodsTop(ctx context.Context, options PodsTopOptions) (*metr
 
 func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container string, command []string) (string, error) {
 	namespace = k.NamespaceOrDefault(namespace)
-	pod, err := k.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	pod, err := k.manager.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -260,18 +260,18 @@ func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container st
 func (k *Kubernetes) createExecutor(namespace, name string, podExecOptions *v1.PodExecOptions) (remotecommand.Executor, error) {
 	// Compute URL
 	// https://github.com/kubernetes/kubectl/blob/5366de04e168bcbc11f5e340d131a9ca8b7d0df4/pkg/cmd/exec/exec.go#L382-L397
-	req := k.clientSet.CoreV1().RESTClient().
+	req := k.manager.clientSet.CoreV1().RESTClient().
 		Post().
 		Resource("pods").
 		Namespace(namespace).
 		Name(name).
 		SubResource("exec")
-	req.VersionedParams(podExecOptions, k.parameterCodec)
-	spdyExec, err := remotecommand.NewSPDYExecutor(k.cfg, "POST", req.URL())
+	req.VersionedParams(podExecOptions, k.manager.parameterCodec)
+	spdyExec, err := remotecommand.NewSPDYExecutor(k.manager.cfg, "POST", req.URL())
 	if err != nil {
 		return nil, err
 	}
-	webSocketExec, err := remotecommand.NewWebSocketExecutor(k.cfg, "GET", req.URL().String())
+	webSocketExec, err := remotecommand.NewWebSocketExecutor(k.manager.cfg, "GET", req.URL().String())
 	if err != nil {
 		return nil, err
 	}
