@@ -7,70 +7,22 @@ import (
 	"testing"
 )
 
-func TestPodsTop(t *testing.T) {
+func TestPodsTopMetricsUnavailable(t *testing.T) {
 	testCase(t, func(c *mcpContext) {
 		mockServer := NewMockServer()
 		defer mockServer.Close()
 		c.withKubeConfig(mockServer.config)
-		metricsApiAvailable := false
 		mockServer.Handle(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			println("Request received:", req.Method, req.URL.Path) // TODO: REMOVE LINE
 			w.Header().Set("Content-Type", "application/json")
 			// Request Performed by DiscoveryClient to Kube API (Get API Groups legacy -core-)
 			if req.URL.Path == "/api" {
-				if !metricsApiAvailable {
-
-					_, _ = w.Write([]byte(`{"kind":"APIVersions","versions":[],"serverAddressByClientCIDRs":[{"clientCIDR":"0.0.0.0/0"}]}`))
-				} else {
-					_, _ = w.Write([]byte(`{"kind":"APIVersions","versions":["metrics.k8s.io/v1beta1"],"serverAddressByClientCIDRs":[{"clientCIDR":"0.0.0.0/0"}]}`))
-				}
+				_, _ = w.Write([]byte(`{"kind":"APIVersions","versions":[],"serverAddressByClientCIDRs":[{"clientCIDR":"0.0.0.0/0"}]}`))
 				return
 			}
 			// Request Performed by DiscoveryClient to Kube API (Get API Groups)
 			if req.URL.Path == "/apis" {
 				_, _ = w.Write([]byte(`{"kind":"APIGroupList","apiVersion":"v1","groups":[]}`))
 				return
-			}
-			// Request Performed by DiscoveryClient to Kube API (Get API Resources)
-			if metricsApiAvailable && req.URL.Path == "/apis/metrics.k8s.io/v1beta1" {
-				_, _ = w.Write([]byte(`{"kind":"APIResourceList","apiVersion":"v1","groupVersion":"metrics.k8s.io/v1beta1","resources":[{"name":"pods","singularName":"","namespaced":true,"kind":"PodMetrics","verbs":["get","list"]}]}`))
-				return
-			}
-			// Pod Metrics from all namespaces
-			if metricsApiAvailable && req.URL.Path == "/apis/metrics.k8s.io/v1beta1/pods" {
-				if req.URL.Query().Get("labelSelector") == "app=pod-ns-5-42" {
-					_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
-						`{"metadata":{"name":"pod-ns-5-42","namespace":"ns-5"},"containers":[{"name":"container-1","usage":{"cpu":"42m","memory":"42Mi"}}]}` +
-						`]}`))
-				} else {
-					_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
-						`{"metadata":{"name":"pod-1","namespace":"default"},"containers":[{"name":"container-1","usage":{"cpu":"100m","memory":"200Mi"}},{"name":"container-2","usage":{"cpu":"200m","memory":"300Mi"}}]},` +
-						`{"metadata":{"name":"pod-2","namespace":"ns-1"},"containers":[{"name":"container-1-ns-1","usage":{"cpu":"300m","memory":"400Mi"}}]}` +
-						`]}`))
-
-				}
-				return
-			}
-			// Pod Metrics from configured namespace
-			if metricsApiAvailable && req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/default/pods" {
-				_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
-					`{"metadata":{"name":"pod-1","namespace":"default"},"containers":[{"name":"container-1","usage":{"cpu":"10m","memory":"20Mi"}},{"name":"container-2","usage":{"cpu":"30m","memory":"40Mi"}}]}` +
-					`]}`))
-				return
-			}
-			// Pod Metrics from ns-5 namespace
-			if metricsApiAvailable && req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/ns-5/pods" {
-				_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
-					`{"metadata":{"name":"pod-ns-5-1","namespace":"ns-5"},"containers":[{"name":"container-1","usage":{"cpu":"10m","memory":"20Mi"}}]}` +
-					`]}`))
-				return
-			}
-			// Pod Metrics from ns-5 namespace with pod-ns-5-5 pod name
-			if metricsApiAvailable && req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/ns-5/pods/pod-ns-5-5" {
-				_, _ = w.Write([]byte(`{"kind":"PodMetrics","apiVersion":"metrics.k8s.io/v1beta1",` +
-					`"metadata":{"name":"pod-ns-5-5","namespace":"ns-5"},` +
-					`"containers":[{"name":"container-1","usage":{"cpu":"13m","memory":"37Mi"}}]` +
-					`}`))
 			}
 		}))
 		podsTopMetricsApiUnavailable, err := c.callTool("pods_top", map[string]interface{}{})
@@ -85,9 +37,69 @@ func TestPodsTop(t *testing.T) {
 				t.Errorf("call tool returned unexpected content: %s", podsTopMetricsApiUnavailable.Content[0].(mcp.TextContent).Text)
 			}
 		})
-		// Enable metrics API addon
-		metricsApiAvailable = true
-		c.mcpServer.k.Derived(t.Context()).CacheInvalidate() // Force discovery client to refresh
+	})
+}
+
+func TestPodsTopMetricsAvailable(t *testing.T) {
+	testCase(t, func(c *mcpContext) {
+		mockServer := NewMockServer()
+		defer mockServer.Close()
+		c.withKubeConfig(mockServer.config)
+		mockServer.Handle(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			println("Request received:", req.Method, req.URL.Path) // TODO: REMOVE LINE
+			w.Header().Set("Content-Type", "application/json")
+			// Request Performed by DiscoveryClient to Kube API (Get API Groups legacy -core-)
+			if req.URL.Path == "/api" {
+				_, _ = w.Write([]byte(`{"kind":"APIVersions","versions":["metrics.k8s.io/v1beta1"],"serverAddressByClientCIDRs":[{"clientCIDR":"0.0.0.0/0"}]}`))
+				return
+			}
+			// Request Performed by DiscoveryClient to Kube API (Get API Groups)
+			if req.URL.Path == "/apis" {
+				_, _ = w.Write([]byte(`{"kind":"APIGroupList","apiVersion":"v1","groups":[]}`))
+				return
+			}
+			// Request Performed by DiscoveryClient to Kube API (Get API Resources)
+			if req.URL.Path == "/apis/metrics.k8s.io/v1beta1" {
+				_, _ = w.Write([]byte(`{"kind":"APIResourceList","apiVersion":"v1","groupVersion":"metrics.k8s.io/v1beta1","resources":[{"name":"pods","singularName":"","namespaced":true,"kind":"PodMetrics","verbs":["get","list"]}]}`))
+				return
+			}
+			// Pod Metrics from all namespaces
+			if req.URL.Path == "/apis/metrics.k8s.io/v1beta1/pods" {
+				if req.URL.Query().Get("labelSelector") == "app=pod-ns-5-42" {
+					_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
+						`{"metadata":{"name":"pod-ns-5-42","namespace":"ns-5"},"containers":[{"name":"container-1","usage":{"cpu":"42m","memory":"42Mi"}}]}` +
+						`]}`))
+				} else {
+					_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
+						`{"metadata":{"name":"pod-1","namespace":"default"},"containers":[{"name":"container-1","usage":{"cpu":"100m","memory":"200Mi"}},{"name":"container-2","usage":{"cpu":"200m","memory":"300Mi"}}]},` +
+						`{"metadata":{"name":"pod-2","namespace":"ns-1"},"containers":[{"name":"container-1-ns-1","usage":{"cpu":"300m","memory":"400Mi"}}]}` +
+						`]}`))
+
+				}
+				return
+			}
+			// Pod Metrics from configured namespace
+			if req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/default/pods" {
+				_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
+					`{"metadata":{"name":"pod-1","namespace":"default"},"containers":[{"name":"container-1","usage":{"cpu":"10m","memory":"20Mi"}},{"name":"container-2","usage":{"cpu":"30m","memory":"40Mi"}}]}` +
+					`]}`))
+				return
+			}
+			// Pod Metrics from ns-5 namespace
+			if req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/ns-5/pods" {
+				_, _ = w.Write([]byte(`{"kind":"PodMetricsList","apiVersion":"metrics.k8s.io/v1beta1","items":[` +
+					`{"metadata":{"name":"pod-ns-5-1","namespace":"ns-5"},"containers":[{"name":"container-1","usage":{"cpu":"10m","memory":"20Mi"}}]}` +
+					`]}`))
+				return
+			}
+			// Pod Metrics from ns-5 namespace with pod-ns-5-5 pod name
+			if req.URL.Path == "/apis/metrics.k8s.io/v1beta1/namespaces/ns-5/pods/pod-ns-5-5" {
+				_, _ = w.Write([]byte(`{"kind":"PodMetrics","apiVersion":"metrics.k8s.io/v1beta1",` +
+					`"metadata":{"name":"pod-ns-5-5","namespace":"ns-5"},` +
+					`"containers":[{"name":"container-1","usage":{"cpu":"13m","memory":"37Mi"}}]` +
+					`}`))
+			}
+		}))
 		podsTopDefaults, err := c.callTool("pods_top", map[string]interface{}{})
 		t.Run("pods_top defaults returns pod metrics from all namespaces", func(t *testing.T) {
 			if err != nil {
