@@ -5,21 +5,20 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/metrics/pkg/apis/metrics"
-	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 
-	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	labelutil "k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/util/httpstream"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/metrics/pkg/apis/metrics"
+	metricsv1beta1api "k8s.io/metrics/pkg/apis/metrics/v1beta1"
+
+	"github.com/manusa/kubernetes-mcp-server/pkg/version"
 )
 
 type PodsTopOptions struct {
@@ -49,7 +48,7 @@ func (k *Kubernetes) PodsGet(ctx context.Context, namespace, name string) (*unst
 
 func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (string, error) {
 	namespace = k.NamespaceOrDefault(namespace)
-	pod, err := k.manager.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	pod, err := k.ResourcesGet(ctx, &schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, namespace, name)
 	if err != nil {
 		return "", err
 	}
@@ -62,11 +61,15 @@ func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (st
 
 	// Delete managed service
 	if isManaged {
-		if sl, _ := k.manager.clientSet.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{
+		services, err := k.manager.accessControlClientSet.Services(namespace)
+		if err != nil {
+			return "", err
+		}
+		if sl, _ := services.List(ctx, metav1.ListOptions{
 			LabelSelector: managedLabelSelector.String(),
 		}); sl != nil {
 			for _, svc := range sl.Items {
-				_ = k.manager.clientSet.CoreV1().Services(namespace).Delete(ctx, svc.Name, metav1.DeleteOptions{})
+				_ = services.Delete(ctx, svc.Name, metav1.DeleteOptions{})
 			}
 		}
 	}
@@ -86,12 +89,16 @@ func (k *Kubernetes) PodsDelete(ctx context.Context, namespace, name string) (st
 
 	}
 	return "Pod deleted successfully",
-		k.manager.clientSet.CoreV1().Pods(namespace).Delete(ctx, name, metav1.DeleteOptions{})
+		k.ResourcesDelete(ctx, &schema.GroupVersionKind{Group: "", Version: "v1", Kind: "Pod"}, namespace, name)
 }
 
 func (k *Kubernetes) PodsLog(ctx context.Context, namespace, name, container string) (string, error) {
 	tailLines := int64(256)
-	req := k.manager.clientSet.CoreV1().Pods(k.NamespaceOrDefault(namespace)).GetLogs(name, &v1.PodLogOptions{
+	pods, err := k.manager.accessControlClientSet.Pods(k.NamespaceOrDefault(namespace))
+	if err != nil {
+		return "", err
+	}
+	req := pods.GetLogs(name, &v1.PodLogOptions{
 		TailLines: &tailLines,
 		Container: container,
 	})
@@ -197,30 +204,16 @@ func (k *Kubernetes) PodsTop(ctx context.Context, options PodsTopOptions) (*metr
 	} else {
 		namespace = k.NamespaceOrDefault(namespace)
 	}
-	metricsClient, err := metricsclientset.NewForConfig(k.manager.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create metrics client: %w", err)
-	}
-	versionedMetrics := &metricsv1beta1api.PodMetricsList{}
-	if options.Name != "" {
-		m, err := metricsClient.MetricsV1beta1().PodMetricses(namespace).Get(ctx, options.Name, metav1.GetOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("failed to get metrics for pod %s/%s: %w", namespace, options.Name, err)
-		}
-		versionedMetrics.Items = []metricsv1beta1api.PodMetrics{*m}
-	} else {
-		versionedMetrics, err = metricsClient.MetricsV1beta1().PodMetricses(namespace).List(ctx, options.ListOptions)
-		if err != nil {
-			return nil, fmt.Errorf("failed to list pod metrics in namespace %s: %w", namespace, err)
-		}
-	}
-	convertedMetrics := &metrics.PodMetricsList{}
-	return convertedMetrics, metricsv1beta1api.Convert_v1beta1_PodMetricsList_To_metrics_PodMetricsList(versionedMetrics, convertedMetrics, nil)
+	return k.manager.accessControlClientSet.PodsMetricses(ctx, namespace, options.Name, options.ListOptions)
 }
 
 func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container string, command []string) (string, error) {
 	namespace = k.NamespaceOrDefault(namespace)
-	pod, err := k.manager.clientSet.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
+	pods, err := k.manager.accessControlClientSet.Pods(namespace)
+	if err != nil {
+		return "", err
+	}
+	pod, err := pods.Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -237,7 +230,7 @@ func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container st
 		Stdout:    true,
 		Stderr:    true,
 	}
-	executor, err := k.createExecutor(namespace, name, podExecOptions)
+	executor, err := k.manager.accessControlClientSet.PodsExec(namespace, name, podExecOptions)
 	if err != nil {
 		return "", err
 	}
@@ -255,27 +248,4 @@ func (k *Kubernetes) PodsExec(ctx context.Context, namespace, name, container st
 		return stderr.String(), nil
 	}
 	return "", nil
-}
-
-func (k *Kubernetes) createExecutor(namespace, name string, podExecOptions *v1.PodExecOptions) (remotecommand.Executor, error) {
-	// Compute URL
-	// https://github.com/kubernetes/kubectl/blob/5366de04e168bcbc11f5e340d131a9ca8b7d0df4/pkg/cmd/exec/exec.go#L382-L397
-	req := k.manager.clientSet.CoreV1().RESTClient().
-		Post().
-		Resource("pods").
-		Namespace(namespace).
-		Name(name).
-		SubResource("exec")
-	req.VersionedParams(podExecOptions, k.manager.parameterCodec)
-	spdyExec, err := remotecommand.NewSPDYExecutor(k.manager.cfg, "POST", req.URL())
-	if err != nil {
-		return nil, err
-	}
-	webSocketExec, err := remotecommand.NewWebSocketExecutor(k.manager.cfg, "GET", req.URL().String())
-	if err != nil {
-		return nil, err
-	}
-	return remotecommand.NewFallbackExecutor(webSocketExec, spdyExec, func(err error) bool {
-		return httpstream.IsUpgradeFailure(err) || httpstream.IsHTTPSProxyError(err)
-	})
 }
