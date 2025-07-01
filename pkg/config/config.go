@@ -6,17 +6,23 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+// StaticConfig is the configuration for the server.
+// It allows to configure server specific settings and tools to be enabled or disabled.
 type StaticConfig struct {
 	DeniedResources []GroupVersionKind `toml:"denied_resources"`
 
-	LogLevel           int    `toml:"log_level,omitempty"`
-	SSEPort            int    `toml:"sse_port,omitempty"`
-	HTTPPort           int    `toml:"http_port,omitempty"`
-	SSEBaseURL         string `toml:"sse_base_url,omitempty"`
-	KubeConfig         string `toml:"kubeconfig,omitempty"`
-	ListOutput         string `toml:"list_output,omitempty"`
-	ReadOnly           bool   `toml:"read_only,omitempty"`
-	DisableDestructive bool   `toml:"disable_destructive,omitempty"`
+	LogLevel   int    `toml:"log_level,omitempty"`
+	SSEPort    int    `toml:"sse_port,omitempty"`
+	HTTPPort   int    `toml:"http_port,omitempty"`
+	SSEBaseURL string `toml:"sse_base_url,omitempty"`
+	KubeConfig string `toml:"kubeconfig,omitempty"`
+	ListOutput string `toml:"list_output,omitempty"`
+	// When true, expose only tools annotated with readOnlyHint=true
+	ReadOnly bool `toml:"read_only,omitempty"`
+	// When true, disable tools annotated with destructiveHint=true
+	DisableDestructive bool     `toml:"disable_destructive,omitempty"`
+	EnabledTools       []string `toml:"enabled_tools,omitempty"`
+	DisabledTools      []string `toml:"disabled_tools,omitempty"`
 }
 
 type GroupVersionKind struct {
@@ -25,6 +31,7 @@ type GroupVersionKind struct {
 	Kind    string `toml:"kind,omitempty"`
 }
 
+// ReadConfig reads the toml file and returns the StaticConfig.
 func ReadConfig(configPath string) (*StaticConfig, error) {
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
