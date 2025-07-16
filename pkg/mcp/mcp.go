@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"slices"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 	authenticationapiv1 "k8s.io/api/authentication/v1"
@@ -18,8 +19,9 @@ import (
 )
 
 type Configuration struct {
-	Profile    Profile
-	ListOutput output.Output
+	Profile      Profile
+	ListOutput   output.Output
+	OIDCProvider *oidc.Provider
 
 	StaticConfig *config.StaticConfig
 }
@@ -105,9 +107,9 @@ func (s *Server) ServeHTTP(httpServer *http.Server) *server.StreamableHTTPServer
 	return server.NewStreamableHTTPServer(s.server, options...)
 }
 
-// VerifyToken verifies the given token with the audience by
+// VerifyTokenAPIServer verifies the given token with the audience by
 // sending an TokenReview request to API Server.
-func (s *Server) VerifyToken(ctx context.Context, token string, audience string) (*authenticationapiv1.UserInfo, []string, error) {
+func (s *Server) VerifyTokenAPIServer(ctx context.Context, token string, audience string) (*authenticationapiv1.UserInfo, []string, error) {
 	if s.k == nil {
 		return nil, nil, fmt.Errorf("kubernetes manager is not initialized")
 	}
@@ -120,6 +122,13 @@ func (s *Server) GetKubernetesAPIServerHost() string {
 		return ""
 	}
 	return s.k.GetAPIServerHost()
+}
+
+func (s *Server) GetOIDCProvider() *oidc.Provider {
+	if s.configuration.OIDCProvider == nil {
+		return nil
+	}
+	return s.configuration.OIDCProvider
 }
 
 func (s *Server) Close() {

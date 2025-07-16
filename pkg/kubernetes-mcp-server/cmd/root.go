@@ -5,9 +5,11 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/spf13/cobra"
 
 	"k8s.io/cli-runtime/pkg/genericiooptions"
@@ -196,20 +198,28 @@ func (m *MCPServerOptions) Validate() error {
 	if !m.StaticConfig.RequireOAuth && (m.StaticConfig.AuthorizationURL != "" || m.StaticConfig.ServerURL != "") {
 		return fmt.Errorf("authorization-url and server-url are only valid if require-oauth is enabled")
 	}
-	if m.StaticConfig.AuthorizationURL != "" &&
-		!strings.HasPrefix(m.StaticConfig.AuthorizationURL, "https://") {
-		if strings.HasPrefix(m.StaticConfig.AuthorizationURL, "http://") {
+	if m.StaticConfig.AuthorizationURL != "" {
+		u, err := url.Parse(m.StaticConfig.AuthorizationURL)
+		if err != nil {
+			return err
+		}
+		if u.Scheme != "https" && u.Scheme != "http" {
+			return fmt.Errorf("--authorization-url must be a valid URL")
+		}
+		if u.Scheme == "http" {
 			klog.Warningf("authorization-url is using http://, this is not recommended production use")
-		} else {
-			return fmt.Errorf("authorization-url must start with https://")
 		}
 	}
-	if m.StaticConfig.ServerURL != "" &&
-		!strings.HasPrefix(m.StaticConfig.ServerURL, "https://") {
-		if strings.HasPrefix(m.StaticConfig.ServerURL, "http://") {
+	if m.StaticConfig.ServerURL != "" {
+		u, err := url.Parse(m.StaticConfig.ServerURL)
+		if err != nil {
+			return err
+		}
+		if u.Scheme != "https" && u.Scheme != "http" {
+			return fmt.Errorf("--server-url must be a valid URL")
+		}
+		if u.Scheme == "http" {
 			klog.Warningf("server-url is using http://, this is not recommended production use")
-		} else {
-			return fmt.Errorf("server-url must start with https://")
 		}
 	}
 	return nil
@@ -235,10 +245,21 @@ func (m *MCPServerOptions) Run() error {
 		_, _ = fmt.Fprintf(m.Out, "%s\n", version.Version)
 		return nil
 	}
+
+	var oidcProvider *oidc.Provider
+	if m.StaticConfig.AuthorizationURL != "" {
+		provider, err := oidc.NewProvider(context.TODO(), m.StaticConfig.AuthorizationURL)
+		if err != nil {
+			return fmt.Errorf("unable to setup OIDC provider: %w", err)
+		}
+		oidcProvider = provider
+	}
+
 	mcpServer, err := mcp.NewServer(mcp.Configuration{
 		Profile:      profile,
 		ListOutput:   listOutput,
 		StaticConfig: m.StaticConfig,
+		OIDCProvider: oidcProvider,
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to initialize MCP server: %w\n", err)
