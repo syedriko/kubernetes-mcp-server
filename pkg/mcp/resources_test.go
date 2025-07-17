@@ -223,7 +223,7 @@ func TestResourcesListAsTable(t *testing.T) {
 				"(?<kind>ConfigMap)\\s+" +
 				"(?<name>a-configmap-to-list-as-table)\\s+" +
 				"(?<data>1)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<labels>resource=config-map)"
 			if m, e := regexp.MatchString(expectedRow, outConfigMapList); !m || e != nil {
 				t.Fatalf("Expected row '%s' not found in output:\n%s", expectedRow, outConfigMapList)
@@ -261,7 +261,7 @@ func TestResourcesListAsTable(t *testing.T) {
 				"(?<apiVersion>route.openshift.io/v1)\\s+" +
 				"(?<kind>Route)\\s+" +
 				"(?<name>an-openshift-route-to-list-as-table)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<labels><none>)"
 			if m, e := regexp.MatchString(expectedRow, outRouteList); !m || e != nil {
 				t.Fatalf("Expected row '%s' not found in output:\n%s", expectedRow, outRouteList)

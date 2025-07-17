@@ -241,7 +241,7 @@ func TestPodsListAsTable(t *testing.T) {
 				"(?<ready>0\\/1)\\s+" +
 				"(?<status>Pending)\\s+" +
 				"(?<restarts>0)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<ip><none>)\\s+" +
 				"(?<node><none>)\\s+" +
 				"(?<nominated_node><none>)\\s+" +
@@ -259,7 +259,7 @@ func TestPodsListAsTable(t *testing.T) {
 				"(?<ready>0\\/1)\\s+" +
 				"(?<status>Pending)\\s+" +
 				"(?<restarts>0)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<ip><none>)\\s+" +
 				"(?<node><none>)\\s+" +
 				"(?<nominated_node><none>)\\s+" +
@@ -302,7 +302,7 @@ func TestPodsListAsTable(t *testing.T) {
 				"(?<ready>0\\/1)\\s+" +
 				"(?<status>Pending)\\s+" +
 				"(?<restarts>0)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<ip><none>)\\s+" +
 				"(?<node><none>)\\s+" +
 				"(?<nominated_node><none>)\\s+" +

@@ -92,7 +92,7 @@ func TestNamespacesListAsTable(t *testing.T) {
 				"(?<kind>Namespace)\\s+" +
 				"(?<name>ns-1)\\s+" +
 				"(?<status>Active)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<labels>kubernetes.io/metadata.name=ns-1)"
 			if m, e := regexp.MatchString(expectedRow, out); !m || e != nil {
 				t.Fatalf("Expected row '%s' not found in output:\n%s", expectedRow, out)
@@ -103,7 +103,7 @@ func TestNamespacesListAsTable(t *testing.T) {
 				"(?<kind>Namespace)\\s+" +
 				"(?<name>ns-2)\\s+" +
 				"(?<status>Active)\\s+" +
-				"(?<age>(\\d+m)?\\d+s)\\s+" +
+				"(?<age>(\\d+m)?(\\d+s)?)\\s+" +
 				"(?<labels>kubernetes.io/metadata.name=ns-2)"
 			if m, e := regexp.MatchString(expectedRow, out); !m || e != nil {
 				t.Fatalf("Expected row '%s' not found in output:\n%s", expectedRow, out)
